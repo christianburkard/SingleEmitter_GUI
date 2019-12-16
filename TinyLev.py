@@ -19,7 +19,7 @@ from Library.Functions import *
 from Library.ArduinoPort import *
 from Library.FFTPlot import *
 from Library.pathFinder import *
-#from Library.settings import *
+from Library.settings import *
 import tkinter as tk
 from matplotlib import pyplot as plt
 import numpy as np
@@ -994,7 +994,7 @@ class GUI():
 #        Frame.__init__(self, master, *args, **kwargs)
         super().__init__(*args, **kwargs)
         self.master = master
-        self.master = tk.Toplevel(self.master)
+#        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
         self.master.title("TinyLev")
         self.master.geometry("900x600+1000+600")
