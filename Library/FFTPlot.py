@@ -58,7 +58,7 @@ def showFFT():
     plt.ylabel('R-Amplitude / px')
     locs, labels = plt.xticks()
     plt.xticks(np.arange(0, 201, step=10))
-    plt.xlim((1,200))
+    plt.xlim((1,20))
 #    plt.ylim((0,3))
 
     plt.subplot(2, 1, 2)
@@ -67,7 +67,7 @@ def showFFT():
     plt.ylabel('Z-Amplitude / px')
     locs, labels = plt.xticks()
     plt.xticks(np.arange(0, 201, step=10))
-    plt.xlim((1,200))
+    plt.xlim((1,20))
 #    plt.ylim((0,abs(3)))
 
     print("FFT plotting done")
