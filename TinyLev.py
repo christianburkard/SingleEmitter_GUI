@@ -88,6 +88,8 @@ valueVdef = 90
 
 
 
+
+
 def safeSetPoint(self):
     print(self.spinBoxZ.get())
 
@@ -531,7 +533,12 @@ class objectDetection():
             #Start timer
     #        cmdStartTimer()
 
-
+            try:
+                frameWidth = globFrameWidth
+#                print("Frame width manually changed to: ", frameWidth)
+            except:
+                frameWidth = 720
+                print("Default frame width : ", frameWidth)
 
             # construct the argument parse and parse the arguments
             ap = argparse.ArgumentParser()
@@ -570,8 +577,8 @@ class objectDetection():
             tracker = None
             writer = None
             confdef = 0.2
-            fps = FPSOutput().start()
 
+            fps = FPSOutput().start()
             coordArrayX = np.array([])
             coordArrayY = np.array([])
             radiusArray = np.array([])
@@ -594,7 +601,7 @@ class objectDetection():
 
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
-                frame = imutils.resize(frame, width=240)
+                frame = imutils.resize(frame, width=frameWidth)
 
                 height, width, channels = frame.shape
                 deltaX = width/2 #x-offset for centering image coordinate system
@@ -1039,7 +1046,7 @@ class GUI():
         self.b8 = Button(self.master, text = "Measuring Z-Position", command = self.newWinZOL)
         self.b8.grid(column= 8, row = 7,sticky = tk.W+tk.E, columnspan =1)
 
-        self.b9 = Button(self.master, text = "Show FFT", command = showFFT)
+        self.b9 = Button(self.master, text = "Show FFT", command = self.showFFTfcn)
         self.b9.grid(column= 8, row = 8,sticky = tk.W+tk.E, columnspan =1)
 
         self.setPnt = tk.Label(self.master, text="H-Value: ")
@@ -1079,6 +1086,15 @@ class GUI():
         self.zCoordLbl = tk.Label(self.master, text="Z-Coordinate: --:--")
         self.zCoordLbl.grid(column=2,row=14,sticky = tk.W+tk.E)
 
+        self.setPntFrame = tk.Label(self.master, text="Define frame width: ")
+        self.setPntFrame.grid(column=2,row=15,sticky = tk.W+tk.E)
+                # Create a spinbox for H
+        self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
+        self.spinBoxWidth.grid(column=7, row= 15,sticky = tk.W+tk.E)
+
+        self.b10 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
+        self.b10.grid(column=8,row=15,sticky = tk.W)
+
 
     def printValueH(self):
         print("H-value: {} ".format(self.spinBoxH.get()))
@@ -1102,6 +1118,20 @@ class GUI():
         print("V",valueUpperV)
 #        return valueUpperH, valueUpperS, valueUpperV
 
+
+    def setFrameWidth(self):
+        print("Frame width changed manually to: ",self.spinBoxWidth.get())
+        global globFrameWidth
+        globFrameWidth = int(self.spinBoxWidth.get())
+        return globFrameWidth
+
+
+    def showFFTfcn(self):
+        showFFT()
+
+
+    def printFrameWidth():
+        print("Frame width: ", spinBoxWidth.get())
 
     def setHSVDef(self):
         # set default hsv values
