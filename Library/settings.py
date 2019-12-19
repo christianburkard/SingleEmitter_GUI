@@ -5,6 +5,17 @@ Author: Christian Burkard
 Masterthesis: Closed-Loop Control of an Acoustic Levitation System
 
 """
+import serial
+import time
+import numpy as np
+import cv2
+import sys
+import pandas as pd
+from tkinter import filedialog
+import tkinter as tk
+import csv
+
+
 
 #Initialization of global variables
 def initGlob():
@@ -24,3 +35,49 @@ def initGlob():
     serFPGA = []
 
     print("Global variables imported ..")
+
+
+def defLookUpTable():
+    global dataByte1
+    global dataByte2
+    global dataByte3
+    print("Choose look up table ...")
+    filePath = filedialog.askopenfilename()
+    with open(filePath, 'r') as f:
+        reader = csv.reader(f, delimiter=';')
+        # get header from first row
+        headers = next(reader)
+        # get all the rows as a list
+        data = list(reader)
+        # transform data into numpy array
+        data = np.array(data).astype(int)
+        framemax = len(data[:,1])
+        dataByte1 = data[:,0]
+        dataByte2 = data[:,1]
+        dataByte3 = data[:,2]
+
+        return dataByte1, dataByte2, dataByte3
+    print("done ...")
+
+
+def defaultLookUp():
+    global dataByte1
+    global dataByte2
+    global dataByte3
+#    print("Choose look up table ...")
+#    filePath = filedialog.askopenfilename()
+    with open("./Data/LookUpTable_0_720_Dec.csv", 'r') as f:
+        reader = csv.reader(f, delimiter=';')
+        # get header from first row
+        headers = next(reader)
+        # get all the rows as a list
+        data = list(reader)
+        # transform data into numpy array
+        data = np.array(data).astype(int)
+        framemax = len(data[:,1])
+        dataByte1 = data[:,0]
+        dataByte2 = data[:,1]
+        dataByte3 = data[:,2]
+
+        return dataByte1, dataByte2, dataByte3
+    print("done ...")

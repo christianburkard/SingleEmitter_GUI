@@ -44,6 +44,8 @@ def showFFT():
     timeSamp = np.linspace(0.0,sigLen*timeT,sigLen)
     freqSamp = np.linspace(0.0, 1.0/(2.0*timeT), sigLen//2)
 
+    xLength = 1.0/(2.0*timeT)
+
     zData = (data[:-1,1])
     rData = (data[:-1,2])
 
@@ -51,23 +53,22 @@ def showFFT():
     zfft = fft(zData)
 
 
-
     plt.subplot(2, 1, 1)
-    plt.plot(freqSamp, 2.0/sigLen*np.abs(rfft[0:sigLen//2]), 'k', color = 'black')
-    #plt.title('Position vs time')
-    plt.ylabel('R-Amplitude / px')
+    plt.plot(freqSamp, 10.0/sigLen*np.abs(rfft[0:sigLen//2]), 'k', color = 'black')
+#    plt.title('Position vs time. Sampling frequency: ',freqSamp)
+    plt.ylabel('R-Amplitude / mm')
     locs, labels = plt.xticks()
     plt.xticks(np.arange(0, 201, step=10))
-    plt.xlim((1,20))
-#    plt.ylim((0,3))
+    plt.xlim((1,abs(xLength)))
+    plt.ylim((0,5))
 
     plt.subplot(2, 1, 2)
-    plt.plot(freqSamp, 2.0/sigLen*np.abs(zfft[0:sigLen//2]), 'k', color = 'black')
+    plt.plot(freqSamp, 10.0/sigLen*np.abs(zfft[0:sigLen//2]), 'k', color = 'black')
     plt.xlabel('Frequency f / Hz')
-    plt.ylabel('Z-Amplitude / px')
+    plt.ylabel('Z-Amplitude / mm')
     locs, labels = plt.xticks()
     plt.xticks(np.arange(0, 201, step=10))
-    plt.xlim((1,20))
-#    plt.ylim((0,abs(3)))
+    plt.xlim((1,abs(xLength)))
+    plt.ylim(0,5)
 
     print("FFT plotting done")

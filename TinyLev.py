@@ -67,7 +67,8 @@ line1 = []
 cameraChoice = [
     ("PiCamera"),
     ("USB Camera"),
-    ("Stereo Camera")]
+    ("Stereo Camera"),
+    ("USB Camera PID")]
 
 #Import all essential global variables
 global PiCorrdX
@@ -529,12 +530,12 @@ class objectDetection():
 
         if selected == 1:
 
-            time.sleep(1)
+            time.sleep(0.5)
             #Start timer
     #        cmdStartTimer()
 
             try:
-                frameWidth = globFrameWidth
+                frameWidth = int(globFrameWidth)
 #                print("Frame width manually changed to: ", frameWidth)
             except:
                 frameWidth = 720
@@ -801,10 +802,31 @@ class objectDetection():
 
             time.sleep(0.2)
 
+
+            try:
+                 dataByte1, dataByte2, dataByte3 = defaultLookUp()
+            except:
+                #read in values from look-up table
+                dataByte1, dataByte2, dataByte3 = defLookUpTable()
+
+            byte1 = dataByte1[3]
+            byte2 = dataByte2[3]
+            byte3 = dataByte3[3]
+
+            global ser
             ser = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+            print("Serial connection with FPGA established ...")
+            time.sleep(0.2)
             stepNum = 720
             steps = 719
             byte1 = 0
+
+            try:
+                frameWidth = int(globFrameWidth)
+#                print("Frame width manually changed to: ", frameWidth)
+            except:
+                frameWidth = 720
+                print("Default frame width : ", frameWidth)
 
             deltaX = 400 #x-offset for centering image coordinate system
             deltaY = 300 #y-offset for centering image coordinate system
@@ -861,7 +883,7 @@ class objectDetection():
 
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
-                frame = imutils.resize(frame, width=720)
+                frame = imutils.resize(frame, width=frameWidth)
                 height, width, channels = frame.shape
                 deltaX = width/2 #x-offset for centering image coordinate system
                 deltaY = height/2 #y-offset for centering image coordinate system
@@ -964,6 +986,12 @@ class objectDetection():
                 cv2.imshow("Frame", frame)
                 key = cv2.waitKey(1) & 0xFF
 
+
+                #set serial values to fpga
+                values = bytearray([byte1, byte2, byte3])
+                ser.write(values)
+                print("Data bits written ...")
+
                 #print coordinate values on gui
 #                printCoordsGui(self,PixCoordX,PixCoordY)
 
@@ -990,6 +1018,7 @@ class objectDetection():
             else:
                 vs.release()
             # close all windows
+            ser.close()
             cv2.destroyAllWindows()
 
 
@@ -1163,6 +1192,8 @@ class GUI():
             objectDetection.objectDetectionUSBCamera(self,selected,reticleIncl)
         elif selected == 2:
             objectDetection.objectDetectionOther(self,selected,reticleIncl)
+        elif selected == 3:
+            objectDetection.objectDetectionZMeasurement(self,selected,reticleIncl)
 
 
     def setReticleIncl(self):
