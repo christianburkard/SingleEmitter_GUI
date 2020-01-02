@@ -70,6 +70,13 @@ cameraChoice = [
     ("Stereo Camera"),
     ("USB Camera PID")]
 
+modeMeasuring = [
+        ("Mode 1"),
+        ("Mode 2"),
+        ("Mode 3")]
+
+
+
 #Import all essential global variables
 global PiCorrdX
 global PiCoordY
@@ -1080,7 +1087,7 @@ class GUI():
 
         self.setPnt = tk.Label(self.master, text="H-Value: ")
         self.setPnt.grid(column=2,row=10,sticky = tk.W+tk.E)
-                # Create a spinbox for H
+
         self.spinBoxH = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueH)
         self.spinBoxH.grid(column=7, row= 10,sticky = tk.W+tk.E)
 
@@ -1215,7 +1222,7 @@ class GUI():
     def newWinZOL(self):
         self.master.withdraw()
         self.newWindow = tk.Toplevel(self.master)
-        newBtnZOL = measureZPosOL(self.newWindow)
+        newBtnZOL = measureZPosOL(self.newWindow,modeMeasuring)
 
 
     def newWinZCL(self):
@@ -1223,63 +1230,59 @@ class GUI():
         self.newWindow = tk.Toplevel(self.master)
         newBtnZCL = winZClosedLoop(self.newWindow)
 
-
-
-
-
 class measureZPosOL():
 
-    def __init__(self, master):
+    def __init__(self, master, modeMeasuring, *args, **kwargs):
 
-
+        super().__init__(*args, **kwargs)
         self.master = master
         self.frame = Frame(self.master)
         self.master.lift()
 
         self.master.title("Measuring Z-Position")
-#        mainWin = Toplevel(window)
         self.master.geometry('800x400+1000+600')
-#        Style().configure("TButton", padding=(0, 5, 0, 5),
-#            font='serif 10')
-#
+
+
+        self.modeChoice = tk.IntVar()
+        self.modeMeasuring = modeMeasuring
         selected = tk.IntVar()
 
         self.stpmsm = tk.Button(self.master, text = "FPGA Set-Up", command = connectFPGA)
 #        self.stpmsm.grid(column= 3, row = 4, sticky = tk.W+tk.E,columnspan = 1)
-        self.stpmsm.pack()
+        self.stpmsm.grid(column=1,row=5,sticky = tk.W)
 
         self.shworb = tk.Button(self.master, text = "Browse", command = browseLookUp)
 #        self.shworb.grid(column= 3, row = 5, sticky =tk.W+tk.E,columnspan = 1)
-        self.shworb.pack()
+        self.shworb.grid(column=3,row=5,sticky = tk.W)
 
         self.bck = tk.Button(self.master, text = "Back", command = self.mainGUI)
 #        self.bck.grid(column= 3, row = 6, sticky = tk.W+tk.E,columnspan = 1)
-        self.bck.pack()
+        self.bck.grid(column=2,row=6,sticky = tk.W)
 
         # Create a spinbox
         self.spinBoxZ = tk.Spinbox(self.master, from_ =0, to=719, command = self.printValues)
 #        self.spinBoxZ.grid(column=3, row= 9,sticky = tk.W+tk.E)
-        self.spinBoxZ.pack()
+        self.spinBoxZ.grid(column=2,row=7,sticky = tk.W)
 
         self.setBtn = tk.Button(self.master, text = "Set", command = self.printValues)
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
-        self.setBtn.pack()
+        self.setBtn.grid(column=3,row=7,sticky = tk.W)
 
         self.setBtn = tk.Button(self.master, text = "Start", command = self.startMeasZPosOL)
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
-        self.setBtn.pack()
+        self.setBtn.grid(column=3,row=8,sticky = tk.W)
 
         self.setPnt = tk.Label(self.master, text="Set point: ")
 #        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
-        self.setPnt.pack()
+        self.setPnt.grid(column=2,row=8,sticky = tk.W)
 
-#        self.setBtn = tk.Button(self.master, text = "Exit", command = self.destroyWind)
-#        self.setBtn.grid(column=7, row = 11,sticky = tk.W+tk.E, columnspan = 1)
+        self.label1 = tk.Label(self.master, text = "Select Camera").grid(row=0, sticky=tk.W, columnspan=3)
 
-#        self.setScaler = tk.Scale(self.master, from_=0, to = 720, orient=HORIZONTAL,length=500,command = self.printScaleVal,
-#                                  )
-##        self.setScaler.grid(column=9, row = 9,padx = 100, columnspan = 1)
-#        self.setScaler.pack()
+
+        for index, modeMeasuring in enumerate(modeMeasuring):
+                    b = tk.Radiobutton(self.master, text=modeMeasuring, variable=self.modeChoice,
+                                    value=index, command = self.modeChangeValue)
+        b.grid(row=index+1, column=1,sticky = tk.W)
 #
 
 
@@ -1288,6 +1291,12 @@ class measureZPosOL():
         self.master.withdraw()
         self.master = tk.Toplevel(self.master)
         bckBtn = GUI(self.master,cameraChoice)
+
+
+    def modeChangeValue(self):
+        global selected
+        print("Your choice: {} ".format(modeMeasuring[self.modeChoice.get()]))
+        selected = self.modeChoice.get()
 
 
     def printValues(self):
