@@ -1030,7 +1030,6 @@ class objectDetection():
 
 
 
-
 class GUI():
 
     def __init__(self, master,cameraChoice, *args, **kwargs):
@@ -1240,7 +1239,7 @@ class measureZPosOL():
         self.master.lift()
 
         self.master.title("Measuring Z-Position")
-        self.master.geometry('800x400+1000+600')
+        self.master.geometry('600x400+1000+600')
 
 
         self.modeChoice = tk.IntVar()
@@ -1249,40 +1248,40 @@ class measureZPosOL():
 
         self.stpmsm = tk.Button(self.master, text = "FPGA Set-Up", command = connectFPGA)
 #        self.stpmsm.grid(column= 3, row = 4, sticky = tk.W+tk.E,columnspan = 1)
-        self.stpmsm.grid(column=1,row=5,sticky = tk.W)
+        self.stpmsm.grid(column=3,row=1,sticky = tk.W)
 
         self.shworb = tk.Button(self.master, text = "Browse", command = browseLookUp)
 #        self.shworb.grid(column= 3, row = 5, sticky =tk.W+tk.E,columnspan = 1)
-        self.shworb.grid(column=3,row=5,sticky = tk.W)
+        self.shworb.grid(column=3,row=2,sticky = tk.W)
 
         self.bck = tk.Button(self.master, text = "Back", command = self.mainGUI)
 #        self.bck.grid(column= 3, row = 6, sticky = tk.W+tk.E,columnspan = 1)
-        self.bck.grid(column=2,row=6,sticky = tk.W)
+        self.bck.grid(column=6,row=1,sticky = tk.W)
 
         # Create a spinbox
         self.spinBoxZ = tk.Spinbox(self.master, from_ =0, to=719, command = self.printValues)
 #        self.spinBoxZ.grid(column=3, row= 9,sticky = tk.W+tk.E)
-        self.spinBoxZ.grid(column=2,row=7,sticky = tk.W)
+        self.spinBoxZ.grid(column=3,row=7,sticky = tk.W)
 
         self.setBtn = tk.Button(self.master, text = "Set", command = self.printValues)
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
-        self.setBtn.grid(column=3,row=7,sticky = tk.W)
+        self.setBtn.grid(column=4,row=7,sticky = tk.W)
 
         self.setBtn = tk.Button(self.master, text = "Start", command = self.startMeasZPosOL)
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
-        self.setBtn.grid(column=3,row=8,sticky = tk.W)
+        self.setBtn.grid(column=5,row=7,sticky = tk.W)
 
         self.setPnt = tk.Label(self.master, text="Set point: ")
 #        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
-        self.setPnt.grid(column=2,row=8,sticky = tk.W)
+        self.setPnt.grid(column=3,row=8,sticky = tk.W)
 
-        self.label1 = tk.Label(self.master, text = "Select Camera").grid(row=0, sticky=tk.W, columnspan=3)
+        self.label1 = tk.Label(self.master, text = "Select Mode").grid(row=0, sticky=tk.W, columnspan=1)
 
 
-        for index, modeMeasuring in enumerate(modeMeasuring):
+        for indexMode, modeMeasuring in enumerate(modeMeasuring):
                     b = tk.Radiobutton(self.master, text=modeMeasuring, variable=self.modeChoice,
-                                    value=index, command = self.modeChangeValue)
-        b.grid(row=index+1, column=1,sticky = tk.W)
+                                    value=indexMode, command = self.modeChangeValue)
+                    b.grid(row=indexMode+1, column=0,sticky = tk.W)
 #
 
 
