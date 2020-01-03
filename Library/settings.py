@@ -37,6 +37,7 @@ def initGlob():
     print("Global variables imported ..")
 
 
+#defining specific look up table
 def defLookUpTable():
     global dataByte1
     global dataByte2
@@ -59,6 +60,7 @@ def defLookUpTable():
         return dataByte1, dataByte2, dataByte3
 
 
+#defining of default look up table
 def defaultLookUp():
     global dataByte1
     global dataByte2
@@ -77,10 +79,11 @@ def defaultLookUp():
         dataByte1 = data[:,0]
         dataByte2 = data[:,1]
         dataByte3 = data[:,2]
-        print("done ...")
+        print("Default look-up table loaded ...")
         return dataByte1, dataByte2, dataByte3
 
 
+#lists all available system serial ports
 def serialPorts():
     """ Lists serial port names
 

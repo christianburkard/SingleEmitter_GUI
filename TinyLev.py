@@ -45,7 +45,7 @@ from tkinter import filedialog, Canvas
 import keyboard
 from tkinter.ttk import Frame, Button, Entry, Style
 from concurrent import futures
-
+from Library.modeMovement import modeMovement
 
 
 
@@ -660,7 +660,7 @@ class objectDetection():
                     else:
                         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                         PixCoordX = (center[0]-deltaX)
-                        PixCoordY = (center[1]-deltaY)
+                        PixCoordY = (center[1]-deltaY)*(-1)
                         radius = radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
@@ -800,7 +800,7 @@ class objectDetection():
 
 
 ####################################################
-#### Z-Position measurement
+#### Z-Position measurement mode 3
 ####################################################
 
     def objectDetectionZMeasurement(self,selected,reticleIncl):
@@ -816,17 +816,20 @@ class objectDetection():
                 #read in values from look-up table
                 dataByte1, dataByte2, dataByte3 = defLookUpTable()
 
-            byte1 = dataByte1[3]
-            byte2 = dataByte2[3]
-            byte3 = dataByte3[3]
+#            byte1 = dataByte1[3]
+#            byte2 = dataByte2[3]
+#            byte3 = dataByte3[3]
+            stepIter = 0
 
-            global ser
+#                time.sleep(0.1)
+
+#                global ser
             ser = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
             print("Serial connection with FPGA established ...")
             time.sleep(0.2)
             stepNum = 720
             steps = 719
-            byte1 = 0
+#                byte1 = 0
 
             try:
                 frameWidth = int(globFrameWidth)
@@ -835,8 +838,8 @@ class objectDetection():
                 frameWidth = 720
                 print("Default frame width : ", frameWidth)
 
-            deltaX = 400 #x-offset for centering image coordinate system
-            deltaY = 300 #y-offset for centering image coordinate system
+#            deltaX = 400 #x-offset for centering image coordinate system
+#            deltaY = 300 #y-offset for centering image coordinate system
 
             # construct the argument parse and parse the arguments
             ap = argparse.ArgumentParser()
@@ -874,8 +877,9 @@ class objectDetection():
             coordArrayY = np.array([])
             radiusArray = np.array([])
             timeArray = np.array([])
-            # keep looping
-            while True:
+                # keep looping
+#                while True:
+            while stepIter < 719:
 
                 frame = vs.read()
 
@@ -940,7 +944,7 @@ class objectDetection():
                     else:
                         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                         PixCoordX = (center[0]-deltaX)
-                        PixCoordY = (center[1]-deltaY)
+                        PixCoordY = (center[1]-deltaY)*(-1)
                         radius = radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
@@ -994,11 +998,20 @@ class objectDetection():
                 key = cv2.waitKey(1) & 0xFF
 
 
-                #set serial values to fpga
+                #set serial default 0 position values to fpga
+                byte1 = dataByte1[stepIter]
+                byte2 = dataByte2[stepIter]
+                byte3 = dataByte3[stepIter]
                 values = bytearray([byte1, byte2, byte3])
+                print("Byte1: ",byte1)
+                print("Byte2: ",byte2)
+                print("Byte3: ",byte3)
+#                ser = serialObject
                 ser.write(values)
                 print("Data bits written ...")
-
+                stepIter = stepIter + 1
+                print("Iteration step: ",stepIter)
+#                    time.sleep(0.1)
                 #print coordinate values on gui
 #                printCoordsGui(self,PixCoordX,PixCoordY)
 
@@ -1271,6 +1284,10 @@ class measureZPosOL():
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
         self.setBtn.grid(column=5,row=7,sticky = tk.W)
 
+        self.resetBtn = tk.Button(self.master, text = "Reset", command = self.resetBytes)
+#        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
+        self.resetBtn.grid(column=6,row=7,sticky = tk.W)
+
         self.setPnt = tk.Label(self.master, text="Set point: ")
 #        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
         self.setPnt.grid(column=3,row=8,sticky = tk.W)
@@ -1293,9 +1310,13 @@ class measureZPosOL():
 
 
     def modeChangeValue(self):
-        global selected
+        global selectedMode
+        global dataByte1
+        global dataByte2
+        global dataByte3
         print("Your choice: {} ".format(modeMeasuring[self.modeChoice.get()]))
-        selected = self.modeChoice.get()
+        selectedMode = self.modeChoice.get()
+        dataByte1, dataByte2, dataByte3 = defaultLookUp()
 
 
     def printValues(self):
@@ -1303,17 +1324,34 @@ class measureZPosOL():
         listValue = self.spinBoxZ.get()
         funcOpenLoop(listValue)
 
+
     def printScaleVal(self):
 #        print("Scaler value: {} ".format(self.setScaler.get()))
         print("Scaler value: {} ")
+
 
     def destroyWind(self):
         window.destroy()
         sys.exit()
 
 
+    def resetBytes(self):
+        ser = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+        byte1 = dataByte1[0]
+        byte2 = dataByte2[0]
+        byte3 = dataByte3[0]
+        values = bytearray([byte1, byte2, byte3])
+        ser.write(values)
+        print("Serial bytes changed to default values ...")
+
+
     def startMeasZPosOL(self):
-        objectDetection.objectDetectionUSBCamera(self, 1, 1)
+        if self.modeChoice.get() == 0:
+            modeMovement.modeMovementUp(self)
+        elif self.modeChoice.get() == 1:
+            modeMovement.modeMovementDown(self)
+        elif self.modeChoice.get() == 2:
+            modeMovement.modeMovementUpDown(self)
 
 
 class winZClosedLoop():

@@ -19,11 +19,85 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
 import serial
+from Library.Functions import *
+from Library.settings import *
 
 
 
+#def funcMode1(serialObject):
+#    ser = serialObject
+#    if phaseByte <= 720:
+#
+#        if phaseByte >= 512:
+#            byte2 = byte2 + 64
+#            phaseByte = phaseByte - 512
+#
+#        elif phaseByte >= 256:
+#            byte2 = byte2 + 32
+#            phaseByte = phaseByte -256
+#
+#        elif phaseByte >= 128:
+#            byte2 = byte2 + 16
+#            phaseByte = phaseByte - 128
+#
+#        if byte2 > 208 and byte1 == 127:
+#            byte2 = 128
+#            phaseByte = 0
+#
+#
+#    byte1 = phaseByte
+#    byte2 = byte2 + addressByte
+#    print("Phase Byte 1:",byte1)
+#    print("Phase Byte 2:",byte2)
+#
+#    byte1Array = np.append(byte1Array,byte1)
+#    byte2Array = np.append(byte2Array,byte2)
+#    byte3Array = np.append(byte3Array,byte3)
+#    timeArray = np.append(timeArray,time.time())
+#
+#    phaseByte = phaseByte + 1
+#    time.sleep(0.05)
+#
+#    values = bytearray([byte1, byte2, dutyByte])
+#    ser.write(values)
+#
+#    if byte2 == 240 and byte1 == 127:
+#        writeBytes(timeArray,byte1Array,byte2Array,byte3Array)
+#        sys.exit()
+#
+#
+#
+#def funcMode2(serialObject):
+#    ser = serialObject
+#
+#
+#
+##counts from 0 to 719 from the loaded look up table
+#def funcMode3(serialObject,dataByte1,dataByte2,dataByte3):
+#    ser = serialObject
+#    i = 0
+#    startTimer()
+##    for i in  range(0,stepNum-1):
+#    while i < 719:
+#        byte1 = dataByte1[i]
+#        byte2 = dataByte2[i]
+#        byte3 = dataByte3[i]
+#
+#        print("Phase Byte 1:",byte1)
+#        print("Phase Byte 2:",byte2)
+#        print("Step number ",i)
+#        time.sleep(0.1)
+#        values = bytearray([byte1, byte2, byte3])
+#        ser.write(values)
+#        i = i + 5
+#        stopTimer()
+#
+#        if i == 717:
+#            i =0
 
 
+
+#function prints out serial bytes on console
 def funcOpenLoop(listValue):
     global serialObject
     ser = serialObject
@@ -31,11 +105,12 @@ def funcOpenLoop(listValue):
     byte1 = dataByte1[listValue]
     byte2 = dataByte2[listValue]
     byte3 = dataByte3[listValue]
-    time.sleep(0.05)
+    time.sleep(0.01)
     values = bytearray([byte1, byte2, byte3])
     ser.write(values)
 
 
+#browsing function for look up table files
 def browseLookUp():
     global data
     global dataByte1
@@ -62,13 +137,11 @@ def browseLookUp():
         print("Data bytes initialized ..")
 
 
-
-
+#writing bytes into a csv file at specific folder
 def writeBytes(timeArray,Byte1,Byte2,Byte3):
     time.sleep(0.5)
     print("Writing data to file ..")
-#    coordArray = np.array([])
-    #coordArray = np.concatenate((coordArrayX, coordArrayY))
+
     data = {'Time' : timeArray,'Byte 1' : Byte1, 'Byte 2' : Byte2, 'Byte 3' : Byte3}
 #    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
     df1 = pd.DataFrame(data)
@@ -117,6 +190,7 @@ def writeMeanDiameter(framenum,PixCoordX,PixCoordY,PixDiameter,selectedCam):
         time.sleep(0.5)
         print("Data written")
 
+
 def timeNow():
     now = datetime.datetime.now().strftime("%S.%f")
     now = str(now)
@@ -125,12 +199,6 @@ def timeNow():
     return(now)
 
 
-def timeNow():
-    now = datetime.datetime.now().strftime("%S.%f")
-    now = str(now)
-#    hrs, mins, secs = [float(x) for x in s.split(':')]
-#    return(hrs*3600 + mins*60 +secs)
-    return(now)
 
 def startTimer():
     global starttimer
@@ -145,6 +213,7 @@ def stopTimer():
     print("Execution time /s: {:.9f} ".format(endtimer - starttimer))
     print("Timer Stopped")
 
+
 def InitializeLogFilePixels():
     with open("/home/pi/Desktop/TinyLev/Logging/OrbitCoordinatesPixel.csv", "a") as log:
         log.write("{0},{1},{2},{3}\n".format("PixCoordX", "PixCoordY", "Object Radius Pixels", "time(s)"))
@@ -154,10 +223,10 @@ def InitializeLogFileMeanDiameterPC():
     with open("./Logging/MeanParticleDiameter.csv", "a") as log:
         log.write("{0},{1},{2},{3}\n".format("Frame number","PixCoordX", "PixCoordY", "Diameter"))
 
+
 def InitializeLogFileMeanDiameterRasp():
     with open("/home/pi/Desktop/TinyLev/Logging/MeanParticleDiameter.csv", "a") as log:
         log.write("{0},{1},{2},{3}\n".format("Frame number","PixCoordX", "PixCoordY", "Diameter"))
-
 
 
 def pixcoordinate():
@@ -219,6 +288,7 @@ def showRadiusvsFramePC():
     plt.ylabel("Radius of Contour / px")
     plt.show()
     print("Radius Distribution Plotting done")
+
 
 def showRadiusvsFrameRasp():
     print("Radius Distribution ...")
