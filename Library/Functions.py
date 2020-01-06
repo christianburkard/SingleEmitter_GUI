@@ -235,12 +235,12 @@ def pixcoordinate():
     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
 
-def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum):
+def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar):
     time.sleep(0.5)
     print("Writing data to file ..")
 #    coordArray = np.array([])
     #coordArray = np.concatenate((coordArrayX, coordArrayY))
-    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum}
+    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum, 'FPS' : fpsVar}
 #    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
     df1 = pd.DataFrame(data)
     df1.replace('',np.nan, inplace = True)

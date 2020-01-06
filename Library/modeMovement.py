@@ -55,7 +55,7 @@ class modeMovement():
             dataByte1, dataByte2, dataByte3 = defLookUpTable()
 
         stepIter = 0
-
+        framenum = 0
 #                time.sleep(0.1)
 
 #                global ser
@@ -114,7 +114,7 @@ class modeMovement():
         timeArray = np.array([])
             # keep looping
 #                while True:
-        while stepIter >= 719:
+        while stepIter <= 719:
 
             frame = vs.read()
 
@@ -254,17 +254,18 @@ class modeMovement():
             if key == ord("r"):
 
                 break
-
+            framenum = framenum +1
             # Update fps counter
             fps.update()
 
         # stop timer and disp. fps information
         fps.stop()
+        fpsVar = float((fps.fps()))
         print("Elapsed time: {:.2f}".format(fps.elapsed()))
         print("Approx. FPS: {:.2f}".format(fps.fps()))
 
         #writing pixel positions, time and radius in an array
-        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray)
+        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
 
         # if we are not using a video file, stop the camera video stream
         if not args.get("video", False):
@@ -492,11 +493,17 @@ class modeMovement():
 
                 break
 
+            framenum = framenum +1
+
             # Update fps counter
             fps.update()
 
+
+
         # stop timer and disp. fps information
         fps.stop()
+        fpsVar = float((fps.fps()))
+
         print("Elapsed time: {:.2f}".format(fps.elapsed()))
         print("Approx. FPS: {:.2f}".format(fps.fps()))
 

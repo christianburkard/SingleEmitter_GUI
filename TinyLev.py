@@ -738,8 +738,10 @@ class objectDetection():
                                 # safe mean diameter in array with corresponding frame
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
-                tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
-
+                try:
+                    tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
+                except:
+                    None
 
                 # update counter
                 framenum = framenum + 1
@@ -751,6 +753,7 @@ class objectDetection():
 
             # stop timer and disp. fps information
             fps.stop()
+            fpsVar = float((fps.fps()))
             print("Elapsed time: {:.2f}".format(fps.elapsed()))
             print("Approx. FPS: {:.2f}".format(fps.fps()))
 
@@ -765,9 +768,9 @@ class objectDetection():
             # time per frame
             meanTimeFrame = fps.elapsed()/framenum
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
-            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
+#            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum)
+            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
 
             # if we are not using a video file, stop the camera video stream
             if not args.get("video", False):

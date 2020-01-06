@@ -20,8 +20,8 @@ import csv
 
 
 def showFFT():
-    caseText = input("Enter approx frames per second: ")
-    approxFPS = int(caseText)
+#    caseText = input("Enter approx frames per second: ")
+#    approxFPS = int(caseText)
 
     print("Plotting FFT ...")
     file = filedialog.askopenfilename(initialdir = './Logging')
@@ -38,7 +38,8 @@ def showFFT():
 
 
     sigLen = len(data[:,1])
-    fsampling = approxFPS
+#    fsampling = approxFPS
+    fsampling = data[1,5]
     timeT = 1/fsampling
 
     timeSamp = np.linspace(0.0,sigLen*timeT,sigLen)
