@@ -57,8 +57,6 @@ class Calculation:
         if selectedCam == 0:
             print("Your Selection: PiCam")
 
-
-
 #           if picamerainst == 1:
             # initialize the camera and grab a reference to the raw camera capture
 #            camera = PiCamera()
@@ -317,10 +315,11 @@ class Calculation:
             coordArrayX = np.array([])
             coordArrayY = np.array([])
             radiusArray = np.array([])
+            timeArray = np.array([])
 
-
-            for framenum in range (0,framemax):
-
+            framenum = 0
+#            for framenum in range (0,framemax):
+            while True:
 
                 # grab the current frame
                 frame = vs.read()
@@ -336,7 +335,10 @@ class Calculation:
 
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
-                frame = imutils.resize(frame, width=800)
+                frame = imutils.resize(frame, width=720)
+                height, width, channels = frame.shape
+                deltaX = width/2 #x-offset for centering image coordinate system
+                deltaY = height/2 #y-offset for centering image coordinate system
                 blurred = cv2.GaussianBlur(frame, (11, 11), 0)
                 hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -349,12 +351,12 @@ class Calculation:
                 mask2 = cv2.erode(mask1, None, iterations=1)
 
                 #Apply median filter
-    #            mask3 = cv2.dilate(mask2, None, iterations=1)
-    #            mask4 = cv2.medianBlur(mask3,5)
+                mask3 = cv2.dilate(mask2, None, iterations=1)
+                mask4 = cv2.medianBlur(mask3,5)
 
                 # find contours in the mask and initialize the current
                 # (x, y) center of the object
-                cnts = cv2.findContours(mask2.copy(), cv2.RETR_EXTERNAL,
+                cnts = cv2.findContours(mask3.copy(), cv2.RETR_EXTERNAL,
                     cv2.CHAIN_APPROX_SIMPLE)
                 cnts = imutils.grab_contours(cnts)
                 center = None
@@ -368,18 +370,22 @@ class Calculation:
                     ((x, y), radius) = cv2.minEnclosingCircle(c)
                     M = cv2.moments(c)
                     if int(M["m00"]) == 0:
-                        center = (0, 0)
+                        center = np.nan
+                        PixCoordX = np.nan
+                        PixCoordY = np.nan
+                        radius = np.nan
                     else:
                         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-                    PixCoordX = (center[0])
-                    PixCoordY = (center[1])
+                        PixCoordX = (center[0]-deltaX)
+                        PixCoordY = (center[1]-deltaY)*(-1)
+                        radius = radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
     #                PixelOrbitGraph(PixCoordX,PixCoordY)
     #                plt.pause(1)
 
 
                     # only proceed if the radius meets a minimum size
-                    if radius > 20:
+                    if radius > 0.01:
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
                         cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
@@ -388,15 +394,19 @@ class Calculation:
                     # update the points queue
                     try:
                         print("Contour radius: {:.2f}".format(radius))
+                        PixRadius = radius
                     except:
                         print("No radius detected")
+                        PixCoordX = np.nan
+                        PixCoordX = np.nan
                         # Transform pixels to mm
+
                     PixRadius = radius
                     PixDiameter = 2*PixRadius
 
 
 #                writeMeanDiameter(PixCoordX,PixCoordY,PixDiameter,framenum)
-                    pts.appendleft(center)
+#                    pts.appendleft(center)
 
                 else:
                     PixCoordX = np.nan
@@ -413,10 +423,14 @@ class Calculation:
                 coordArrayX = np.append(coordArrayX,abs(PixCoordX))
                 coordArrayY = np.append(coordArrayY,abs(PixCoordY))
                 radiusArray = np.append(radiusArray,abs(PixRadius))
+                timeArray = np.append(timeArray,time.time()) # time in seconds
 
                 # show the frame to our screen
                 cv2.imshow("Frame", frame)
                 key = cv2.waitKey(1) & 0xFF
+                if key == ord("r"):
+    #                cmdStopTimer()
+                    break
 
                 # safe mean diameter in array with corresponding frame
                 frameCounter = framenum + 1
@@ -426,7 +440,7 @@ class Calculation:
 
                 # update counter
                 framenum = framenum + 1
-
+                print("Framenumber: ",framenum)
                 # if the 'q' key is pressed, stop the loop
 #                if key == ord("r"):
 #    #                cmdStopTimer()
@@ -447,7 +461,7 @@ class Calculation:
             print("Particle resolution / px/mm : {:.2f}".format(meanPartDiamm))
 
             # time per frame
-            meanTimeFrame = fps.elapsed()/framemax
+            meanTimeFrame = fps.elapsed()/framenum
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
             PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
@@ -465,7 +479,7 @@ class Calculation:
             # take time to write data into csv file
             time.sleep(2)
             fpsApprox = fps.fps()
-            writeMeanDiameter(tempFrames,coordArrayX,coordArrayY,radiusArray,selectedCam)
+            writeMeanDiameter(selectedCam,timeArray,coordArrayY,coordArrayX,radiusArray,framenum,PixDiameter)
 
             # delete all variables that are no longer needed
             del tempPartDiaPixels
@@ -485,7 +499,3 @@ class Calculation:
             # close all windows
             cv2.destroyAllWindows()
 
-
-
-
-#        print("Mean object diameter: {:.2f}".format(meanObjDia),)

@@ -43,8 +43,6 @@ from tkinter.ttk import Frame, Button, Entry, Style
 from concurrent import futures
 
 
-
-
 class modeMovement():
 
     def modeMovementUp(self):

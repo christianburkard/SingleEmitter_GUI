@@ -52,6 +52,7 @@ from Library.modeMovement import modeMovement
 #####################################
 #Initialization
 #####################################
+realParticleDiameter = 2 #in mm
 
 plt.ion()
 x = []
@@ -239,6 +240,7 @@ def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.1):
         plt.title('Title: {}'.format(identifier))
         plt.show()
 
+
     # after the figure, axis, and line are created, we only need to update the y-data
     line1.set_ydata(y1_data)
     # adjust limits if new data goes beyond bounds
@@ -257,8 +259,8 @@ def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.1):
 
 
 def showOrbitFile():
-    filepath = filedialog.askopenfilename()
-    showOrbit(filepath)
+#    filepath = filedialog.askopenfilename()
+    showOrbit()
 
 def showEMPDFile():
     filepath = filedialog.askopenfilename()
@@ -271,8 +273,6 @@ def printCoordsGui(self, CoordR, CoordZ):
     self.rCoordLbl['text'] = "R-Coordinate:  " + formatR
 
 
-
-
 def clickedMeanDia():
 
     selectedCam = selected
@@ -280,14 +280,13 @@ def clickedMeanDia():
 
 def clickedShowRadiusvsTime():
     if selected == 0:
-        showRadiusvsFrameRasp()
+        showRadiusvsFrame()
     if selected == 1:
-        showRadiusvsFramePC()
+        showRadiusvsFrame()
 
 
 def posvsTime():
     showPosvsTime()
-
 
 
 def safeSetPoint():
@@ -585,12 +584,16 @@ class objectDetection():
             tracker = None
             writer = None
             confdef = 0.2
-
+            framenum = 0
             fps = FPSOutput().start()
             coordArrayX = np.array([])
             coordArrayY = np.array([])
             radiusArray = np.array([])
             timeArray = np.array([])
+            tempFrames = np.array([])
+            tempPartDiaPixels = np.array([])
+
+
             # keep looping
             while True:
 
@@ -662,6 +665,7 @@ class objectDetection():
                         PixCoordX = (center[0]-deltaX)
                         PixCoordY = (center[1]-deltaY)*(-1)
                         radius = radius
+                        pixDiameter = 2*radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
 
@@ -699,9 +703,9 @@ class objectDetection():
                     if pts[i - 1] is None or pts[i] is None:
                         continue
 
-                coordArrayX = np.append(coordArrayX,(PixCoordX))
-                coordArrayY = np.append(coordArrayY,(PixCoordY))
-                radiusArray = np.append(radiusArray,(PixRadius))
+                coordArrayX = np.append(coordArrayX,abs(PixCoordX))
+                coordArrayY = np.append(coordArrayY,abs(PixCoordY))
+                radiusArray = np.append(radiusArray,abs(PixRadius))
                 timeArray = np.append(timeArray,time.time()) # time in seconds
 
                     # show mask images
@@ -730,6 +734,16 @@ class objectDetection():
                     break
 #                elif selectedStopAll == 1:
 #                    break
+
+                                # safe mean diameter in array with corresponding frame
+                frameCounter = framenum + 1
+                tempFrames = np.append(tempFrames,frameCounter)
+                tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
+
+
+                # update counter
+                framenum = framenum + 1
+                print("Framenumber: ",framenum)
                 # Update fps counter
                 fps.update()
 
@@ -740,7 +754,20 @@ class objectDetection():
             print("Elapsed time: {:.2f}".format(fps.elapsed()))
             print("Approx. FPS: {:.2f}".format(fps.fps()))
 
-            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray)
+            #calculate mean diameter
+            meanPartDia = sum(tempPartDiaPixels)/frameCounter
+            print("Mean particle diameter / px : {:.2f}".format(meanPartDia))
+
+            # transform from px to mm
+            meanPartDiamm = meanPartDia/realParticleDiameter
+            print("Particle resolution / px/mm : {:.2f}".format(meanPartDiamm))
+
+            # time per frame
+            meanTimeFrame = fps.elapsed()/framenum
+            print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
+            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
+
+            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum)
 
             # if we are not using a video file, stop the camera video stream
             if not args.get("video", False):
@@ -1226,9 +1253,10 @@ class GUI():
         selectedStopAll = 1
 
     def clickedMeanDia():
-        global selectedCam
-        selectedCam = selected.get()
-        Calculation.meanParticleSize(selectedCam)
+        PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
+#        global selectedCam
+#        selectedCam = selected.get()
+#        Calculation.meanParticleSize(selectedCam)
 
 
     def newWinZOL(self):

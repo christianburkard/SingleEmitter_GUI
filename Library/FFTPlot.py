@@ -24,7 +24,7 @@ def showFFT():
     approxFPS = int(caseText)
 
     print("Plotting FFT ...")
-    file = filedialog.askopenfilename()
+    file = filedialog.askopenfilename(initialdir = './Logging')
 
     with open(file, 'r') as f:
         reader = csv.reader(f, delimiter=',')

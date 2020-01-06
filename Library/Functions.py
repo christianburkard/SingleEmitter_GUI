@@ -158,7 +158,7 @@ def clicked():
     print(selected.get())
 
 
-def writeMeanDiameter(framenum,PixCoordX,PixCoordY,PixDiameter,selectedCam):
+def writeMeanDiameter(selectedCam,timeArray,coordArrayY,coordArrayX,radiusArray,framenum,PixDiameter):
     if selectedCam == 0:
     #    with open("H:/03_Software/Python/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
     #    with open("H/home/pi/Desktop/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
@@ -166,8 +166,9 @@ def writeMeanDiameter(framenum,PixCoordX,PixCoordY,PixDiameter,selectedCam):
     #        log.write("{0},{1},{2},{3}\n".format( framenum + 1 , coordArrayX, coordArrayY, radiusArray)
             coordArray = np.array([])
             #coordArray = np.concatenate((coordArrayX, coordArrayY))
-            data = {'framenumber' : framenum,'X Coord' : PixCoordX, 'Y Coord' : PixCoordY, 'Diameter' : PixDiameter}
-            df1 = pd.DataFrame(data=data)
+            data = {'Time' : timeArray,'framenumber' : framenum,'X Coord' : PixCoordX, 'Y Coord' : PixCoordY, 'Diameter' : PixDiameter}
+            df1 = pd.DataFrame(data)
+            df1.replace('',np.nan, inplace = True)
             timeActual = time.strftime("%d%m%y-%H%M%S")
             df1.to_csv("/home/pi/Desktop/TinyLev/Logging/MeanParticleDiameter_" + timeActual + ".csv", index=False)
             #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
@@ -182,8 +183,9 @@ def writeMeanDiameter(framenum,PixCoordX,PixCoordY,PixDiameter,selectedCam):
 #        log.write("{0},{1},{2},{3}\n".format( framenum + 1 , coordArrayX, coordArrayY, radiusArray)
         coordArray = np.array([])
         #coordArray = np.concatenate((coordArrayX, coordArrayY))
-        data = {'framenumber' : framenum,'X Coord' : PixCoordX, 'Y Coord' : PixCoordY, 'Diameter' : PixDiameter}
-        df1 = pd.DataFrame(data=data)
+        data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum, 'Pixe Diameter' : PixDiameter}
+        df1 = pd.DataFrame(data)
+        df1.replace('',np.nan, inplace = True)
         timeActual = time.strftime("%d%m%y-%H%M%S")
         df1.to_csv("./Logging/MeanParticleDiameter_" + timeActual + ".csv", index=False)
         #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
@@ -233,12 +235,12 @@ def pixcoordinate():
     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
 
-def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray):
+def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum):
     time.sleep(0.5)
     print("Writing data to file ..")
 #    coordArray = np.array([])
     #coordArray = np.concatenate((coordArrayX, coordArrayY))
-    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray}
+    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum}
 #    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
     df1 = pd.DataFrame(data)
     df1.replace('',np.nan, inplace = True)
@@ -264,9 +266,9 @@ def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):
     print("Data written")
 
 
-def showRadiusvsFramePC():
+def showRadiusvsFrame():
     print("Radius Distribution ...")
-    file = filedialog.askopenfilename()
+    file = filedialog.askopenfilename(initialdir = './Logging')
     #    file = 'H:/03_Software/Python/TinyLev/Logging/OrbitCoordinatesPixel.csv'
     with open(file, 'r') as f:
         reader = csv.reader(f, delimiter=',')
@@ -279,20 +281,37 @@ def showRadiusvsFramePC():
 
     # Plot the data
     #    x = np.arange(0, elapsedTime, meanTimeFrame)
-    frameinit = data[:framemax,0]
+    framemax = len(data[:,0])
+    frameinit = np.arange(framemax)
     radiusdistr = data[:framemax,3]
+    meanDia = sum(data[:,3])/(framemax)
+
+    timeinit = data[1,0]
+    timeArray = (data[:, 0] - data[0,0])
+
+    plt.subplot(2,1,1)
     plt.plot(frameinit,radiusdistr , '-ok', color = 'black')
     plt.title("Radius Distribution")
-    plt.axis('equal')
+    #plt.axis('equal')
+    plt.legend(['Mean diameter =' + str(meanDia) +' px'],loc='upper right')
     plt.xlabel("frame number")
     plt.ylabel("Radius of Contour / px")
-    plt.show()
+
+
+    plt.subplot(2,1,2)
+    plt.plot(timeArray,radiusdistr , '-ok', color = 'black')
+    plt.title("Radius Distribution")
+    #plt.axis('equal')
+    plt.xlabel("Time t / s")
+    plt.ylabel("Radius of Contour / px")
+
     print("Radius Distribution Plotting done")
+    print("Mean diameter is / px: ", meanDia)
 
 
 def showRadiusvsFrameRasp():
     print("Radius Distribution ...")
-    file = filedialog.askopenfilename()
+    file = filedialog.askopenfilename(initialdir = './Logging')
 
     with open(file, 'r') as f:
         reader = csv.reader(f, delimiter=',')
@@ -413,7 +432,7 @@ def showPosvsTime():
         dtime[i+1] = timeinit[i+1] - timeinit[i]
         tottime = np.append(dtime[i],tottime+dtime[i])
 
-    zCalib = (data[:-1, 2]-400)*(-1)
+    zCalib = (data[:-1, 2])*(-1)
 
     plt.subplot(2, 1, 1)
     plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
@@ -438,9 +457,10 @@ def showPosvsTime():
 
 
 
-def showOrbit(filepath):
+def showOrbit():
     print("Orbit Plotting ...")
-    file = filepath
+    file = filedialog.askopenfilename()
+#    file = filepath
 #    file = '/home/pi/Desktop/GUI/Logging/OrbitCoordinatesPixel.csv'
     with open(file, 'r') as f:
         reader = csv.reader(f, delimiter=',')
@@ -452,7 +472,7 @@ def showOrbit(filepath):
         data = np.array(data).astype(float)
 
     # Plot the data
-    plt.plot(data[:, 1], data[:, 2], '-ok', color = 'black')
+    plt.plot(data[:, 2], data[:, 1], '-ok', color = 'black')
     plt.title("Orbital Pixel Positions Open-Loop")
     plt.axis('equal')
     plt.xlabel("X Pixel Position / px")
