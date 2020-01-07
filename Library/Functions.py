@@ -431,18 +431,35 @@ def showPosvsTime():
     #    dtime[i] = 0
         dtime[i+1] = timeinit[i+1] - timeinit[i]
         tottime = np.append(dtime[i],tottime+dtime[i])
-
+    meandRad = sum(2*data[:-1,3])/len(data[:,1])
     zCalib = (data[:-1, 2])*(-1)
+    zReal = (data[:-1,1])
+    zReal = zReal/meandRad
 
-    plt.subplot(2, 1, 1)
+    xReal = (data[:-1,2])*(-1)
+    xReal = xReal/meandRad
+
+
+    plt.subplot(4, 1, 1)
     plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
     plt.title('Position vs time')
     plt.ylabel('Z-Coordinate / px')
 
-    plt.subplot(2, 1, 2)
+
+    plt.subplot(4, 1, 2)
+    plt.plot(tottime, zReal, '-ok', color = 'black')
+    plt.ylabel('Z-Coordinate / mm')
+
+
+    plt.subplot(4, 1, 3)
     plt.plot(tottime, zCalib, '-ok', color = 'black')
     plt.xlabel('Time t / s')
     plt.ylabel('R-Coordinate / px')
+
+    plt.subplot(4, 1, 4)
+    plt.plot(tottime, xReal, '-ok', color = 'black')
+    plt.xlabel('Time t / s')
+    plt.ylabel('R-Coordinate / mm')
 
 #    # Plot the data
 #    plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')

@@ -53,7 +53,6 @@ from Library.modeMovement import modeMovement
 #####################################
 #Initialization
 #####################################
-realParticleDiameter = 2 #in mm
 
 plt.ion()
 x = []
@@ -277,10 +276,8 @@ def clickedMeanDia():
     Calculation.meanParticleSize(selectedCam)
 
 def clickedShowRadiusvsTime():
-    if selected == 0:
         showRadiusvsFrame()
-    if selected == 1:
-        showRadiusvsFrame()
+
 
 
 def posvsTime():
@@ -773,7 +770,7 @@ class objectDetection():
             print("Mean particle diameter / px : {:.2f}".format(meanPartDia))
 
             # transform from px to mm
-            meanPartDiamm = meanPartDia/realParticleDiameter
+            meanPartDiamm = meanPartDia/objDia
             print("Particle resolution / px/mm : {:.2f}".format(meanPartDiamm))
 
             # time per frame
