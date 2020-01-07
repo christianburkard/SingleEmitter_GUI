@@ -20,6 +20,7 @@ from Library.ArduinoPort import *
 from Library.FFTPlot import *
 from Library.pathFinder import *
 from Library.settings import *
+from Library import PID
 import tkinter as tk
 from matplotlib import pyplot as plt
 import numpy as np
@@ -94,9 +95,6 @@ valueHdef = 100
 valueSdef = 90
 valueVdef = 90
 #window = tk.Tk()
-
-
-
 
 
 def safeSetPoint(self):
@@ -305,6 +303,8 @@ def exitCalc():
 
 def closeAll():
     print("Exiting ...")
+
+    window.protocol()
     window.destroy()
 
 def binNumber(PixCoordX):
@@ -479,7 +479,7 @@ class objectDetection():
                     PixCoordY = np.nan
                     radius = np.nan
                     PixRadius = radius
-                    print("PiX coordinate !!!!!!: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+                    print("PiX coordinate : {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
                     print("Contour radius: {:.2f}".format(radius))
 
                 # loop over the set of tracked points
@@ -545,7 +545,16 @@ class objectDetection():
 #                print("Frame width manually changed to: ", frameWidth)
             except:
                 frameWidth = 720
-                print("Default frame width : ", frameWidth)
+                print("Default frame width: ", frameWidth)
+
+            try:
+                objDia = int(globObjDia)
+#                print("Frame width manually changed to: ", frameWidth)
+            except:
+                objDia = 2 #in mm
+                print("Default object diameter: ", objDia)
+
+
 
             # construct the argument parse and parse the arguments
             ap = argparse.ArgumentParser()
@@ -693,7 +702,7 @@ class objectDetection():
                     PixCoordY = np.nan
                     radius = np.nan
                     PixRadius = radius
-                    print("PiX coordinate !!!!!!: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
                     print("Contour radius: {:.2f}".format(radius))
 
                 # loop over the set of tracked points
@@ -732,8 +741,8 @@ class objectDetection():
                 if key == ord("r"):
     #                cmdStopTimer()
                     break
-#                elif selectedStopAll == 1:
-#                    break
+                elif selectedStopAll == 1:
+                    break
 
                                 # safe mean diameter in array with corresponding frame
                 frameCounter = framenum + 1
@@ -746,6 +755,8 @@ class objectDetection():
                 # update counter
                 framenum = framenum + 1
                 print("Framenumber: ",framenum)
+                window.update()
+
                 # Update fps counter
                 fps.update()
 
@@ -1047,9 +1058,11 @@ class objectDetection():
 
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
-
+    #                cmdStopTimer()
                     break
-
+                elif selectedStopAll == 1:
+                    break
+                window.update()
                 # Update fps counter
                 fps.update()
 
@@ -1174,6 +1187,16 @@ class GUI():
         self.b10.grid(column=8,row=15,sticky = tk.W)
 
 
+        self.setPntFrame = tk.Label(self.master, text="Define object diameter: ")
+        self.setPntFrame.grid(column=2,row=16,sticky = tk.W+tk.E)
+                # Create a spinbox for H
+        self.spinBoxObjDia = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printObjDia)
+        self.spinBoxObjDia.grid(column=7, row= 16,sticky = tk.W+tk.E)
+
+        self.b11 = Button(self.master, text="Set diameter ", command = self.setObjDia)
+        self.b11.grid(column=8,row=16,sticky = tk.W)
+
+
     def printValueH(self):
         print("H-value: {} ".format(self.spinBoxH.get()))
 
@@ -1197,6 +1220,21 @@ class GUI():
 #        return valueUpperH, valueUpperS, valueUpperV
 
 
+    def printObjDia(self):
+        print("Frame width: ", self.spinBoxObjDia.get())
+
+
+    def setObjDia(self):
+        print("Object diameter changed manually to: ",self.spinBoxObjDia.get())
+        global globFrameWidth
+        globObjDia = int(self.spinBoxObjDia.get())
+        return globObjDia
+
+
+    def printFrameWidth(self):
+        print("Frame width: ", self.spinBoxWidth.get())
+
+
     def setFrameWidth(self):
         print("Frame width changed manually to: ",self.spinBoxWidth.get())
         global globFrameWidth
@@ -1207,9 +1245,6 @@ class GUI():
     def showFFTfcn(self):
         showFFT()
 
-
-    def printFrameWidth():
-        print("Frame width: ", spinBoxWidth.get())
 
     def setHSVDef(self):
         # set default hsv values
@@ -1231,6 +1266,8 @@ class GUI():
         print("Timer started")
 
     def setValue(self, isRunningFunc=None):
+        global selectedStopAll
+        selectedStopAll = 0
         try:
             reticleIncl = self.varRetBox.get()
         except:
@@ -1368,11 +1405,25 @@ class measureZPosOL():
 
     def resetBytes(self):
         ser = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+        with open("./Data/LookUpTable_0_720_Dec.csv", 'r') as f:
+            reader = csv.reader(f, delimiter=';')
+            # get header from first row
+            headers = next(reader)
+            # get all the rows as a list
+            data = list(reader)
+            # transform data into numpy array
+            data = np.array(data).astype(int)
+            framemax = len(data[:,1])
+            dataByte1 = data[:,0]
+            dataByte2 = data[:,1]
+            dataByte3 = data[:,2]
+            print("Default look-up table loaded ...")
         byte1 = dataByte1[0]
         byte2 = dataByte2[0]
         byte3 = dataByte3[0]
         values = bytearray([byte1, byte2, byte3])
         ser.write(values)
+        ser.close()
         print("Serial bytes changed to default values ...")
 
 
@@ -1464,3 +1515,4 @@ if __name__ == '__main__':
     window = tk.Tk()
     app = GUI(window,cameraChoice)
     window.mainloop()
+    window.update()

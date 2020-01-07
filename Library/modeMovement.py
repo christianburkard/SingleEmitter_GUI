@@ -56,6 +56,7 @@ class modeMovement():
 
         stepIter = 0
         framenum = 0
+        numIter = 0
 #                time.sleep(0.1)
 
 #                global ser
@@ -102,11 +103,12 @@ class modeMovement():
         else:
             print(" No video stream possible")
         # allow the camera or video file to warm up
-        time.sleep(0.5)
+        time.sleep(0.2)
         tracker = None
         writer = None
         confdef = 0.2
         fps = FPSOutput().start()
+        roundIter = 0
 
         coordArrayX = np.array([])
         coordArrayY = np.array([])
@@ -114,7 +116,10 @@ class modeMovement():
         timeArray = np.array([])
             # keep looping
 #                while True:
-        while stepIter <= 719:
+        while numIter <= 2876:
+
+            if roundIter == 2:
+                break
 
             frame = vs.read()
 
@@ -234,18 +239,20 @@ class modeMovement():
 #                    funcMode3(serialObject,dataByte1,dataByte2,dataByte3)
 
             #set serial default 0 position values to fpga
-            byte1 = dataByte1[stepIter]
-            byte2 = dataByte2[stepIter]
-            byte3 = dataByte3[stepIter]
-            values = bytearray([byte1, byte2, byte3])
-            print("Byte1: ",byte1)
-            print("Byte2: ",byte2)
-            print("Byte3: ",byte3)
-#                ser = serialObject
-            ser.write(values)
+
             print("Data bits written ...")
-            stepIter = stepIter + 1
-            print("Iteration step: ",stepIter)
+            if numIter % 4 == 0:
+                byte1 = dataByte1[stepIter]
+                byte2 = dataByte2[stepIter]
+                byte3 = dataByte3[stepIter]
+                values = bytearray([byte1, byte2, byte3])
+                print("Byte1: ",byte1)
+                print("Byte2: ",byte2)
+                print("Byte3: ",byte3)
+    #                ser = serialObject
+                ser.write(values)
+                stepIter = stepIter + 1
+                print("Iteration step: ",stepIter)
 #                    time.sleep(0.1)
             #print coordinate values on gui
 #                printCoordsGui(self,PixCoordX,PixCoordY)
@@ -255,6 +262,11 @@ class modeMovement():
 
                 break
             framenum = framenum +1
+            numIter = numIter + 1
+            if numIter == 2875:
+                numIter = 0
+                roundIter = roundIter + 1
+                stepIter = 0
             # Update fps counter
             fps.update()
 
@@ -302,6 +314,7 @@ class modeMovement():
         time.sleep(0.2)
         stepNum = 720
         steps = 719
+        framenum = 0
 #                byte1 = 0
 
         try:
@@ -503,12 +516,11 @@ class modeMovement():
         # stop timer and disp. fps information
         fps.stop()
         fpsVar = float((fps.fps()))
-
         print("Elapsed time: {:.2f}".format(fps.elapsed()))
         print("Approx. FPS: {:.2f}".format(fps.fps()))
 
         #writing pixel positions, time and radius in an array
-        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray)
+        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
 
         # if we are not using a video file, stop the camera video stream
         if not args.get("video", False):
@@ -734,17 +746,18 @@ class modeMovement():
             if key == ord("r"):
 
                 break
-
+            framenum = framenum +1
             # Update fps counter
             fps.update()
 
         # stop timer and disp. fps information
         fps.stop()
+        fpsVar = float((fps.fps()))
         print("Elapsed time: {:.2f}".format(fps.elapsed()))
         print("Approx. FPS: {:.2f}".format(fps.fps()))
 
         #writing pixel positions, time and radius in an array
-        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray)
+        writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
 
         # if we are not using a video file, stop the camera video stream
         if not args.get("video", False):

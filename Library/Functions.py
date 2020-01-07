@@ -437,12 +437,12 @@ def showPosvsTime():
     plt.subplot(2, 1, 1)
     plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
     plt.title('Position vs time')
-    plt.ylabel('X-coordinate / px')
+    plt.ylabel('Z-Coordinate / px')
 
     plt.subplot(2, 1, 2)
     plt.plot(tottime, zCalib, '-ok', color = 'black')
     plt.xlabel('Time t / s')
-    plt.ylabel('Z-coordinate / px')
+    plt.ylabel('R-Coordinate / px')
 
 #    # Plot the data
 #    plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
