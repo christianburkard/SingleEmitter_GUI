@@ -605,6 +605,7 @@ class objectDetection():
             timeArray = np.array([])
             tempFrames = np.array([])
             tempPartDiaPixels = np.array([])
+            pidOutputArray = np.array([])
 
 
             # keep looping
@@ -756,7 +757,7 @@ class objectDetection():
                     tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
                 except:
                     None
-
+                pidOutputArray = np.append(tempPartDiaPixels,pid.output)
                 # update counter
                 framenum = framenum + 1
                 print("Framenumber: ",framenum)
@@ -787,6 +788,7 @@ class objectDetection():
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
             writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
+            writePIDOutput(timeArray,coordArrayY,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
             if not args.get("video", False):
@@ -1163,14 +1165,14 @@ class GUI():
         self.spinBoxV = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueV)
         self.spinBoxV.grid(column=7, row= 12,sticky = tk.W+tk.E)
 
-        self.b9 = Button(self.master, text="Set Values ", command = self.setAllValuesHSV)
-        self.b9.grid(column=8,row=11,sticky = tk.W)
+        self.b10 = Button(self.master, text="Set Values ", command = self.setAllValuesHSV)
+        self.b10.grid(column=8,row=11,sticky = tk.W)
 
-        self.b9 = Button(self.master, text="Default ", command = self.setHSVDef)
-        self.b9.grid(column=8,row=12,sticky = tk.W)
+        self.b11 = Button(self.master, text="Default ", command = self.setHSVDef)
+        self.b11.grid(column=8,row=12,sticky = tk.W)
 
-        self.b9 = Button(self.master, text="Exit ", command = closeAll)
-        self.b9.grid(column=8,row=9,sticky = tk.W+tk.E,columnspan =1)
+        self.b12 = Button(self.master, text="Exit ", command = closeAll)
+        self.b12.grid(column=8,row=9,sticky = tk.W+tk.E,columnspan =1)
 
         self.varRetBox = IntVar()
         self.RetBox = Checkbutton(self.master, text = "Include Reticle", variable=self.varRetBox,command=self.setReticleIncl)
@@ -1188,18 +1190,20 @@ class GUI():
         self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
         self.spinBoxWidth.grid(column=7, row= 15,sticky = tk.W+tk.E)
 
-        self.b10 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
-        self.b10.grid(column=8,row=15,sticky = tk.W)
-
+        self.b13 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
+        self.b13.grid(column=8,row=15,sticky = tk.W)
 
         self.setPntFrame = tk.Label(self.master, text="Define object diameter: ")
         self.setPntFrame.grid(column=2,row=16,sticky = tk.W+tk.E)
-                # Create a spinbox for H
+
         self.spinBoxObjDia = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printObjDia)
         self.spinBoxObjDia.grid(column=7, row= 16,sticky = tk.W+tk.E)
 
-        self.b11 = Button(self.master, text="Set diameter ", command = self.setObjDia)
-        self.b11.grid(column=8,row=16,sticky = tk.W)
+        self.b14 = Button(self.master, text="Set diameter ", command = self.setObjDia)
+        self.b14.grid(column=8,row=16,sticky = tk.W)
+
+        self.b15 = Button(self.master, text="Plot PID ", command = self.setPIDPlot)
+        self.b15.grid(column=7,row=7,sticky = tk.W+tk.E,columnspan =1)
 
 
     def printValueH(self):
@@ -1234,6 +1238,9 @@ class GUI():
         global globFrameWidth
         globObjDia = int(self.spinBoxObjDia.get())
         return globObjDia
+
+    def setPIDPlot(self):
+        showPIDPlot()
 
 
     def printFrameWidth(self):

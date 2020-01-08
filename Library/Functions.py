@@ -198,7 +198,7 @@ def pixcoordinate():
 
 
 def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar):
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Writing data to file ..")
 #    coordArray = np.array([])
     #coordArray = np.concatenate((coordArrayX, coordArrayY))
@@ -209,12 +209,12 @@ def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,
     timeActual = time.strftime("%d%m%y-%H%M%S")
     df1.to_csv("./Logging/OrbitCoordinatesPixel_" + timeActual + ".csv", na_rep = np.nan,index=False)
     #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Data written")
 
 
 def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Writing data to file ...")
     coordArray = np.array([])
     #coordArray = np.concatenate((coordArrayX, coordArrayY))
@@ -224,7 +224,20 @@ def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):
     timeActual = time.strftime("%d%m%y-%H%M%S")
     df1.to_csv("/home/pi/Desktop/TinyLev/Logging/OrbitCoordinatesPixel_" + timeActual + ".csv",na_rep = np.nan, index=False)
     #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-    time.sleep(0.5)
+    time.sleep(0.2)
+    print("Data written")
+
+
+def writePIDOutput(timeArray,coordArrayY,pidOutputArray):
+    time.sleep(0.2)
+    print("Writing data to file ...")
+    #coordArray = np.concatenate((coordArrayX, coordArrayY))
+    data = {'Time' : timeArray,'Z-Coordinate' : coordArrayY,'PID Output' : pidOutputArray}
+    df1 = pd.DataFrame(data)
+    df1.replace('',np.nan, inplace = True)
+    timeActual = time.strftime("%d%m%y-%H%M%S")
+    df1.to_csv("./Logging/PIDOutput_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    time.sleep(0.2)
     print("Data written")
 
 
@@ -522,3 +535,48 @@ def defLookUpSteps():
     dataByte2 = data[:,1]
     dataByte3 = data[:,2]
 
+def showPIDPlot():
+    print("Plotting FFT ...")
+    file = filedialog.askopenfilename(initialdir = './Logging')
+
+    with open(file, 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        # get header from first row
+        headers = next(reader)
+        # get all the rows as a list
+        data = list(reader)
+        # transform data into numpy array
+        data = np.array(data).astype(float)
+        framemax = len(data[:,1])
+
+
+    dtime = np.zeros([framemax])
+    tottime = np.array([])
+
+    timeinit = data[:framemax+1, 0]
+    timelinenew = (data[:framemax, 0] - timeinit)
+    dtime[0] = 0
+
+    for i in range(0,framemax-1):
+    #    dtime[i] = 0
+        dtime[i+1] = timeinit[i+1] - timeinit[i]
+        tottime = np.append(dtime[i],tottime+dtime[i])
+
+    sigLen = len(data[:,1])
+    time = data[:,0]
+    zPos = data[:-1,1]
+    pidOutput = data[:-1,2]
+
+    plt.subplot(2, 1, 1)
+    plt.plot(tottime, zPos, 'k', color = 'black')
+#    plt.title('Position vs time. Sampling frequency: ',freqSamp)
+    plt.ylabel('Z-Amplitude / mm')
+    locs, labels = plt.xticks()
+
+    plt.subplot(2, 1, 2)
+    plt.plot(tottime, pidOutput, 'k', color = 'black')
+    plt.xlabel('Time  t / s')
+    plt.ylabel('Ouptut')
+    locs, labels = plt.xticks()
+
+    print("PID output plotting done")
