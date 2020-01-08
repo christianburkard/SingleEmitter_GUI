@@ -533,7 +533,7 @@ class objectDetection():
 
         if selected == 1:
 
-            time.sleep(0.5)
+            time.sleep(0.2)
             #Start timer
     #        cmdStartTimer()
 
@@ -551,7 +551,14 @@ class objectDetection():
                 objDia = 2 #in mm
                 print("Default object diameter: ", objDia)
 
-
+            P = 0.2
+            I = 1.5
+            D = 0.1
+            posZ = 0
+            initPIDParams(posZ,P,I,D)
+            time.sleep(0.1)
+            createConfigPID()
+            time.sleep(0.1)
 
             # construct the argument parse and parse the arguments
             ap = argparse.ArgumentParser()
@@ -586,7 +593,7 @@ class objectDetection():
                 print(" No video stream possible")
 
             # allow the camera or video file to warm up
-            time.sleep(1.0)
+            time.sleep(0.2)
             tracker = None
             writer = None
             confdef = 0.2
@@ -731,9 +738,10 @@ class objectDetection():
                 cv2.imshow("Frame", frame)
                 key = cv2.waitKey(1) & 0xFF
 
-                #print coordinate values on gui
-#                printCoordsGui(self,PixCoordX,PixCoordY)
 
+                pid = readConfigPID()
+                pid.update(PixCoordY)
+                print("PID output: ",pid.output)
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
     #                cmdStopTimer()
@@ -1092,7 +1100,7 @@ class GUI():
 #        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
         self.master.title("TinyLev")
-        self.master.geometry("900x600+1000+600")
+        self.master.geometry("900x650+1000+600")
 
 
 #        selected = tk.IntVar()

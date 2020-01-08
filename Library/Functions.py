@@ -21,80 +21,42 @@ from tkinter import filedialog
 import serial
 from Library.Functions import *
 from Library.settings import *
+from Library import PID
+import os.path
+
+
+def initPIDParams(posZ,P,I,D):
+    global initposZ
+    global initP
+    global initI
+    global initD
+    initposZ = posZ
+    initP = P
+    initI = I
+    initD = D
+    global pid
+    pid = PID.PID(initP,initI,initD)
+    pid.SetPoint = posZ
+#    pid.sample_time(0.001)
 
 
 
-#def funcMode1(serialObject):
-#    ser = serialObject
-#    if phaseByte <= 720:
-#
-#        if phaseByte >= 512:
-#            byte2 = byte2 + 64
-#            phaseByte = phaseByte - 512
-#
-#        elif phaseByte >= 256:
-#            byte2 = byte2 + 32
-#            phaseByte = phaseByte -256
-#
-#        elif phaseByte >= 128:
-#            byte2 = byte2 + 16
-#            phaseByte = phaseByte - 128
-#
-#        if byte2 > 208 and byte1 == 127:
-#            byte2 = 128
-#            phaseByte = 0
-#
-#
-#    byte1 = phaseByte
-#    byte2 = byte2 + addressByte
-#    print("Phase Byte 1:",byte1)
-#    print("Phase Byte 2:",byte2)
-#
-#    byte1Array = np.append(byte1Array,byte1)
-#    byte2Array = np.append(byte2Array,byte2)
-#    byte3Array = np.append(byte3Array,byte3)
-#    timeArray = np.append(timeArray,time.time())
-#
-#    phaseByte = phaseByte + 1
-#    time.sleep(0.05)
-#
-#    values = bytearray([byte1, byte2, dutyByte])
-#    ser.write(values)
-#
-#    if byte2 == 240 and byte1 == 127:
-#        writeBytes(timeArray,byte1Array,byte2Array,byte3Array)
-#        sys.exit()
-#
-#
-#
-#def funcMode2(serialObject):
-#    ser = serialObject
-#
-#
-#
-##counts from 0 to 719 from the loaded look up table
-#def funcMode3(serialObject,dataByte1,dataByte2,dataByte3):
-#    ser = serialObject
-#    i = 0
-#    startTimer()
-##    for i in  range(0,stepNum-1):
-#    while i < 719:
-#        byte1 = dataByte1[i]
-#        byte2 = dataByte2[i]
-#        byte3 = dataByte3[i]
-#
-#        print("Phase Byte 1:",byte1)
-#        print("Phase Byte 2:",byte2)
-#        print("Step number ",i)
-#        time.sleep(0.1)
-#        values = bytearray([byte1, byte2, byte3])
-#        ser.write(values)
-#        i = i + 5
-#        stopTimer()
-#
-#        if i == 717:
-#            i =0
+def readConfigPID():
+    global zPos
+    with open('./Data/pid.conf','r') as f:
+        config = f.readline().split(',')
+        pid.SetPoint = float(config[0])
+        targetPosZ = pid.SetPoint
+        pid.setKp (float(config[1]))
+        pid.setKi (float(config[2]))
+        pid.setKd (float(config[3]))
+        print("Config file loaded ...")
+        return pid
 
+def createConfigPID():
+    if not os.path.isfile('./Data/pid.conf'):
+        with open('./Data/pid.conf','w') as f:
+            f.write('%s,%s,%s,%s'%(targetPosZ,initP,initI,initD))
 
 
 #function prints out serial bytes on console
@@ -105,7 +67,7 @@ def funcOpenLoop(listValue):
     byte1 = dataByte1[listValue]
     byte2 = dataByte2[listValue]
     byte3 = dataByte3[listValue]
-    time.sleep(0.01)
+    time.sleep(0.001)
     values = bytearray([byte1, byte2, byte3])
     ser.write(values)
 
