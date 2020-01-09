@@ -66,7 +66,7 @@ def funcOpenLoop(listValue):
     byte1 = dataByte1[listValue]
     byte2 = dataByte2[listValue]
     byte3 = dataByte3[listValue]
-    time.sleep(0.001)
+    time.sleep(0.0005)
     values = bytearray([byte1, byte2, byte3])
     ser.write(values)
 

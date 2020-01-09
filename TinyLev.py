@@ -1163,6 +1163,8 @@ class GUI():
         self.choice = tk.IntVar()
         self.label1 = tk.Label(self.master, text = "Select Camera").grid(row=0, sticky=tk.W, columnspan=3)
 
+        varSerial = StringVar(self.master) #default value for serial print
+        varSerial.set("0")
 
         for index, cameraChoice in enumerate(cameraChoice):
                     b = tk.Radiobutton(self.master, text=cameraChoice, variable=self.choice,
@@ -1208,7 +1210,7 @@ class GUI():
 
         self.setPnt = tk.Label(self.master, text="S-Value: ")
         self.setPnt.grid(column=2,row=11,sticky = tk.W+tk.E)
-                # Create a spinbox for S
+
         self.spinBoxS = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueS)
         self.spinBoxS.grid(column=7, row= 11,sticky = tk.W+tk.E)
 
@@ -1239,7 +1241,7 @@ class GUI():
 
         self.setPntFrame = tk.Label(self.master, text="Define frame width: ")
         self.setPntFrame.grid(column=2,row=15,sticky = tk.W+tk.E)
-                # Create a spinbox for H
+
         self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
         self.spinBoxWidth.grid(column=7, row= 15,sticky = tk.W+tk.E)
 
@@ -1261,7 +1263,7 @@ class GUI():
         self.setPosFrame = tk.Label(self.master, text="Define object position: ")
         self.setPosFrame.grid(column=2,row=17,sticky = tk.W+tk.E)
 
-        self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-0, to=720,textvariable = 0, command = self.setObjPosTemp)
+        self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTemp)
         self.spinBoxObjPos.grid(column=7, row= 17,sticky = tk.W+tk.E)
 
         self.b16 = Button(self.master, text="Set position ", command = self.setObjPosTemp)
