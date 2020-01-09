@@ -332,7 +332,6 @@ def exitCalc():
 
 def closeAll():
     print("Exiting ...")
-
     window.protocol()
     window.destroy()
 
@@ -355,7 +354,7 @@ class objectDetection():
 #        self.name = name
 #        self.tricks = []
 
-    def objectDetectionPicamera(self,selected,reticleIncl):
+    def objectDetectionPicamera(self,selected,PIDIncl,reticleIncl):
 
         if selected == 0:
 #            print("Your Selection: PiCam")
@@ -560,7 +559,7 @@ class objectDetection():
 #### USB camera setup
 ####################################################
 
-    def objectDetectionUSBCamera(self,selected,reticleIncl):
+    def objectDetectionUSBCamera(self,selected,PIDIncl,reticleIncl):
 
 
         if selected == 1:
@@ -768,10 +767,14 @@ class objectDetection():
                 cv2.imshow("Frame", frame)
                 key = cv2.waitKey(1) & 0xFF
 
+                if PIDIncl == 1:
+                    pid = readConfigPID()
+                    pid.update(PixCoordY)
+                    pidOutputVal = float(pid.output)
 
-                pid = readConfigPID()
-                pid.update(PixCoordY)
-                pidOutputVal = float(pid.output)
+                else:
+                    pidOutputVal = np.nan
+
 #                print("PID output: ",pid.output)
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
@@ -787,13 +790,20 @@ class objectDetection():
 
                 objZPos = setObjPos(spinBoxVal)
                 print("Obj Z position value: ",objZPos)
-                byte1 = dataByte1[int(objZPos)]
-                byte2 = dataByte2[int(objZPos)]
-                byte3 = dataByte3[int(objZPos)]
-                values = bytearray([byte1, byte2, byte3])
-                serialObject.write(values)
-
-                print("Serial Values: ",byte1)
+                if (objZPos >= 0 and PIDIncl == 0):
+                    byte1 = dataByte1[int(objZPos)]
+                    byte2 = dataByte2[int(objZPos)]
+                    byte3 = dataByte3[int(objZPos)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+                elif (objZPos >= 0 and PIDIncl == 0):
+                    byte1 = dataByte1[int(720 + objZPos)]
+                    byte2 = dataByte2[int(720 + objZPos)]
+                    byte3 = dataByte3[int(720 + objZPos)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
 
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
@@ -864,7 +874,7 @@ class objectDetection():
 ####################################################
 
 
-    def objectDetectionOther(self,selected,reticleIncl):
+    def objectDetectionOther(self,selected,PIDIncl,reticleIncl):
 
         if selected == 2:
 
@@ -904,7 +914,7 @@ class objectDetection():
 #### Z-Position measurement mode 3
 ####################################################
 
-    def objectDetectionZMeasurement(self,selected,reticleIncl):
+    def objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl):
 
         if selected == 3:
 
@@ -1231,7 +1241,7 @@ class GUI():
 
         self.varRetBox = IntVar()
         self.RetBox = Checkbutton(self.master, text = "Include Reticle", variable=self.varRetBox,command=self.setReticleIncl)
-        self.RetBox.grid(column=1,row=8,sticky = tk.W+tk.E,columnspan =1)
+        self.RetBox.grid(column=1,row=8,sticky = tk.W,columnspan =1)
 
         self.rCoordLbl = tk.Label(self.master, text="R-Coordinate: --:--")
         self.rCoordLbl.grid(column=2,row=13,sticky = tk.W+tk.E)
@@ -1275,6 +1285,9 @@ class GUI():
         self.b18 = Button(self.master, text = "Close FPGA", command = closeFPGACL)
         self.b18.grid(column= 7, row = 5, sticky = tk.W+tk.E)
 
+        self.varPIDBox = IntVar()
+        self.PIDBox = Checkbutton(self.master, text = "Include PID     ", variable=self.varPIDBox,command=self.setPIDIncl)
+        self.PIDBox.grid(column=1,row=7,sticky = tk.W,columnspan =1)
 
 
     def printValueH(self):
@@ -1307,10 +1320,12 @@ class GUI():
     def printObjDia(self):
         print("Frame width: ", self.spinBoxObjDia.get())
 
+
     def setObjPosTemp(self):
         global spinBoxVal
         spinBoxVal = self.spinBoxObjPos.get()
         setObjPos(spinBoxVal)
+
 
     def setObjDia(self):
         print("Object diameter changed manually to: ",self.spinBoxObjDia.get())
@@ -1353,8 +1368,10 @@ class GUI():
         print("Your choice: {} ".format(cameraChoice[self.choice.get()]))
         selected = self.choice.get()
 
+
     def onTimer():
         print("Timer started")
+
 
     def setValue(self, isRunningFunc=None):
         global selectedStopAll
@@ -1363,15 +1380,28 @@ class GUI():
             reticleIncl = self.varRetBox.get()
         except:
             reticleIncl = 0
-        if selected == 0:
-            objectDetection.objectDetectionPicamera(self,selected,reticleIncl)
-        elif selected == 1:
-            objectDetection.objectDetectionUSBCamera(self,selected,reticleIncl)
-        elif selected == 2:
-            objectDetection.objectDetectionOther(self,selected,reticleIncl)
-        elif selected == 3:
-            objectDetection.objectDetectionZMeasurement(self,selected,reticleIncl)
+        try:
+            PIDIncl = self.varPIDBox.get()
+        except:
+            PIDIncl = 0
 
+        if selected == 0:
+            objectDetection.objectDetectionPicamera(self,selected,PIDIncl,reticleIncl)
+        elif selected == 1:
+            objectDetection.objectDetectionUSBCamera(self,selected,PIDIncl,reticleIncl)
+        elif selected == 2:
+            objectDetection.objectDetectionOther(self,selected,PIDIncl,reticleIncl)
+        elif selected == 3:
+            objectDetection.objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl)
+
+
+    def setPIDIncl(self):
+        global PIDIncl
+        PIDIncl = self.varPIDBox.get()
+        if self.varPIDBox.get() == 1:
+            print("PID included ...") #if checkbox is activated, value is equak to 1, otherwise 0
+        elif self.varPIDBox.get() == 0:
+            print("PID not included ...") #if checkbox is activated, value is equak to 1, otherwise 0
 
     def setReticleIncl(self):
         global reticleIncl
