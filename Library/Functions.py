@@ -40,7 +40,6 @@ def initPIDParams(posZ,P,I,D):
 #    pid.sample_time(0.001)
 
 
-
 def readConfigPID():
     global zPos
     with open('./Data/pid.conf','r') as f:
@@ -101,7 +100,7 @@ def browseLookUp():
 
 #writing bytes into a csv file at specific folder
 def writeBytes(timeArray,Byte1,Byte2,Byte3):
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Writing data to file ..")
 
     data = {'Time' : timeArray,'Byte 1' : Byte1, 'Byte 2' : Byte2, 'Byte 3' : Byte3}
@@ -111,9 +110,8 @@ def writeBytes(timeArray,Byte1,Byte2,Byte3):
     timeActual = time.strftime("%d%m%y-%H%M%S")
     df1.to_csv("H:/08_Data/TinyLev/WritingBytes/WritingBytes_" + timeActual + ".csv", na_rep = np.nan,index=False)
     #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-    time.sleep(0.5)
+    time.sleep(0.2)
     print("Data written")
-
 
 
 def clicked():
@@ -122,8 +120,6 @@ def clicked():
 
 def writeMeanDiameter(selectedCam,timeArray,coordArrayY,coordArrayX,radiusArray,framenum,PixDiameter):
     if selectedCam == 0:
-    #    with open("H:/03_Software/Python/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
-    #    with open("H/home/pi/Desktop/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
             print("Writing data to file ..")
     #        log.write("{0},{1},{2},{3}\n".format( framenum + 1 , coordArrayX, coordArrayY, radiusArray)
             coordArray = np.array([])
@@ -134,13 +130,11 @@ def writeMeanDiameter(selectedCam,timeArray,coordArrayY,coordArrayX,radiusArray,
             timeActual = time.strftime("%d%m%y-%H%M%S")
             df1.to_csv("/home/pi/Desktop/TinyLev/Logging/MeanParticleDiameter_" + timeActual + ".csv", index=False)
             #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-            time.sleep(0.5)
+            time.sleep(0.2)
             print("Data written")
 
 
     if selectedCam == 1:
-#    with open("H:/03_Software/Python/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
-#    with open("H/home/pi/Desktop/GUI/Logging/MeanParticleDiameter.csv", "a") as log:
         print("Writing data to file ..")
 #        log.write("{0},{1},{2},{3}\n".format( framenum + 1 , coordArrayX, coordArrayY, radiusArray)
         coordArray = np.array([])
@@ -151,7 +145,7 @@ def writeMeanDiameter(selectedCam,timeArray,coordArrayY,coordArrayX,radiusArray,
         timeActual = time.strftime("%d%m%y-%H%M%S")
         df1.to_csv("./Logging/MeanParticleDiameter_" + timeActual + ".csv", index=False)
         #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-        time.sleep(0.5)
+        time.sleep(0.2)
         print("Data written")
 
 
@@ -161,7 +155,6 @@ def timeNow():
 #    hrs, mins, secs = [float(x) for x in s.split(':')]
 #    return(hrs*3600 + mins*60 +secs)
     return(now)
-
 
 
 def startTimer():
@@ -486,7 +479,7 @@ def showMeanDia(pathWriteDia, fpsApprox):
         data = np.array(data).astype(float)
 
     # Plot the data
-    time.sleep(1.0)
+    time.sleep(0.2)
     plt.figure(1)
     plt.plot(data[:, 0], data[:, 1], '-ok', color = 'black')
     plt.title("Mean Object Diameter")
@@ -504,7 +497,7 @@ def PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, elapsedTime):
     y = tempPartDiaPixels
 
     # Plot the data
-    time.sleep(1.0)
+    time.sleep(0.2)
     plt.figure(2)
     plt.plot(x, y, '-ok', color = 'black')
     plt.title("Particle Dia vs Time")

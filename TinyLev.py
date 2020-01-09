@@ -96,6 +96,14 @@ valueVdef = 90
 #window = tk.Tk()
 
 
+
+def setObjPos(spinBoxVal):
+    print("Object position changed manually to: ",spinBoxVal)
+    global globObjPos
+    globObjPos = int(spinBoxVal)
+    return globObjPos
+
+
 def safeSetPoint(self):
     print(self.spinBoxZ.get())
 
@@ -111,6 +119,30 @@ def connectFPGA():
         print("Establishing connection to FPGA ..")
         serialObject = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
         print("Connection established ..")
+    except:
+        print("Cant Open Specified Port")
+
+
+def connectFPGACL():
+    """The function initiates the Connection to the UART device with the Port and Buad fed through the Entry
+    boxes in the application."""
+    global serialObject
+    try:
+        print("Establishing connection to FPGA ..")
+        serialObject = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+        print("Connection established ..")
+    except:
+        print("Cant Open Specified Port")
+
+
+def closeFPGACL():
+    """The function initiates the Connection to the UART device with the Port and Buad fed through the Entry
+    boxes in the application."""
+
+    try:
+        print("Closing connection to FPGA ..")
+        serialObject.close()
+        print("Connection closed ..")
     except:
         print("Cant Open Specified Port")
 
@@ -328,7 +360,7 @@ class objectDetection():
         if selected == 0:
 #            print("Your Selection: PiCam")
 #            ArduinoConnection()
-            time.sleep(0.5)
+            time.sleep(0.2)
 
     #    if picamerainst == 1:
             # initialize the camera and grab a reference to the raw camera capture
@@ -539,26 +571,30 @@ class objectDetection():
 
             try:
                 frameWidth = int(globFrameWidth)
-#                print("Frame width manually changed to: ", frameWidth)
             except:
                 frameWidth = 720
                 print("Default frame width: ", frameWidth)
 
             try:
                 objDia = int(globObjDia)
-#                print("Frame width manually changed to: ", frameWidth)
             except:
                 objDia = 2 #in mm
                 print("Default object diameter: ", objDia)
 
-            P = 0.2
+            P = 0.5
             I = 1.5
-            D = 0.1
+            D = 0.3
             posZ = 0
             initPIDParams(posZ,P,I,D)
             time.sleep(0.1)
             createConfigPID()
             time.sleep(0.1)
+
+            try:
+                dataByte1, dataByte2, dataByte3 = defaultLookUp()
+            except:
+            #read in values from look-up table
+                dataByte1, dataByte2, dataByte3 = defLookUpTable()
 
             # construct the argument parse and parse the arguments
             ap = argparse.ArgumentParser()
@@ -568,8 +604,6 @@ class objectDetection():
             # ball in the HSV color space, then initialize the
 #            deltaX = 300 #x-offset for centering image coordinate system
 #            deltaY = 400 #y-offset for centering image coordinate system
-
-
             try:
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
@@ -717,11 +751,6 @@ class objectDetection():
                     if pts[i - 1] is None or pts[i] is None:
                         continue
 
-                coordArrayX = np.append(coordArrayX,abs(PixCoordX))
-                coordArrayY = np.append(coordArrayY,abs(PixCoordY))
-                radiusArray = np.append(radiusArray,abs(PixRadius))
-                timeArray = np.append(timeArray,time.time()) # time in seconds
-
                     # show mask images
     #            cv2.imshow('HSV', mask1)
     #            cv2.imshow('Erode', mask2)
@@ -742,7 +771,8 @@ class objectDetection():
 
                 pid = readConfigPID()
                 pid.update(PixCoordY)
-                print("PID output: ",pid.output)
+                pidOutputVal = float(pid.output)
+#                print("PID output: ",pid.output)
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
     #                cmdStopTimer()
@@ -750,22 +780,45 @@ class objectDetection():
                 elif selectedStopAll == 1:
                     break
 
-                                # safe mean diameter in array with corresponding frame
+#                try:
+#                    spinBoxVal = int(spinBoxVal)
+#                except:
+#                    spinBoxVal = 0 #in mm
+
+                objZPos = setObjPos(spinBoxVal)
+                print("Obj Z position value: ",objZPos)
+                byte1 = dataByte1[int(objZPos)]
+                byte2 = dataByte2[int(objZPos)]
+                byte3 = dataByte3[int(objZPos)]
+                values = bytearray([byte1, byte2, byte3])
+                serialObject.write(values)
+
+                print("Serial Values: ",byte1)
+
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
                 try:
                     tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
                 except:
                     None
-                pidOutputArray = np.append(tempPartDiaPixels,pid.output)
+                pidOutputArray = np.append(pidOutputArray,pidOutputVal)
+                coordArrayX = np.append(coordArrayX,abs(PixCoordX))
+                coordArrayY = np.append(coordArrayY,abs(PixCoordY))
+                radiusArray = np.append(radiusArray,abs(PixRadius))
+                timeArray = np.append(timeArray,time.time()) # time in seconds
                 # update counter
                 framenum = framenum + 1
                 print("Framenumber: ",framenum)
+#
+#                print("PID Array length: ",len(pidOutputArray))
+#                print("coordArrayY: ",len(coordArrayY))
+#                print("Time array: ",len(timeArray))
+
                 window.update()
 
+#                time.sleep(0.5)
                 # Update fps counter
                 fps.update()
-
 
 
             # stop timer and disp. fps information
@@ -1123,14 +1176,14 @@ class GUI():
         self.b9 = Button(self.master, text="Stop ", command = self.stopAll)
         self.b9.grid(column=8,row=2,sticky = tk.W+tk.E,columnspan =1)
 
-        self.b2 = Button(self.master, text = "Stop Measurement", command = stopmeasurement)
-        self.b2.grid(column= 7, row = 4,sticky = tk.W+tk.E,columnspan =1 )
+#        self.b2 = Button(self.master, text = "Stop Measurement", command = stopmeasurement)
+#        self.b2.grid(column= 7, row = 4,sticky = tk.W+tk.E,columnspan =1 )
 
         self.b3 = Button(self.master, text = "Show Orbit", command = showOrbitFile)
-        self.b3.grid(column= 7, row = 5,sticky = tk.W+tk.E, columnspan =1)
+        self.b3.grid(column= 7, row = 6,sticky = tk.W+tk.E, columnspan =1)
 
         self.b4 = Button(self.master, text = "Show Radius Distribution", command = clickedShowRadiusvsTime)
-        self.b4.grid(column= 7, row = 6,sticky = tk.W+tk.E, columnspan =1)
+        self.b4.grid(column= 7, row = 7,sticky = tk.W+tk.E, columnspan =1)
 
         self.b5 = Button(self.master, text = "Estimate Mean Patricle Diameter", command = clickedMeanDia)
         self.b5.grid(column= 8, row = 4,sticky = tk.W+tk.E, columnspan =1)
@@ -1203,7 +1256,23 @@ class GUI():
         self.b14.grid(column=8,row=16,sticky = tk.W)
 
         self.b15 = Button(self.master, text="Plot PID ", command = self.setPIDPlot)
-        self.b15.grid(column=7,row=7,sticky = tk.W+tk.E,columnspan =1)
+        self.b15.grid(column=7,row=8,sticky = tk.W+tk.E,columnspan =1)
+
+        self.setPosFrame = tk.Label(self.master, text="Define object position: ")
+        self.setPosFrame.grid(column=2,row=17,sticky = tk.W+tk.E)
+
+        self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-0, to=720,textvariable = 0, command = self.setObjPosTemp)
+        self.spinBoxObjPos.grid(column=7, row= 17,sticky = tk.W+tk.E)
+
+        self.b16 = Button(self.master, text="Set position ", command = self.setObjPosTemp)
+        self.b16.grid(column=8,row=17,sticky = tk.W)
+
+        self.b17 = Button(self.master, text = "Connect FPGA", command = connectFPGACL)
+        self.b17.grid(column= 7, row = 4, sticky = tk.W+tk.E)
+
+        self.b18 = Button(self.master, text = "Close FPGA", command = closeFPGACL)
+        self.b18.grid(column= 7, row = 5, sticky = tk.W+tk.E)
+
 
 
     def printValueH(self):
@@ -1229,9 +1298,17 @@ class GUI():
 #        return valueUpperH, valueUpperS, valueUpperV
 
 
+    def printObjPos(self):
+        print("Object position: ", self.spinBoxObjPos.get())
+
+
     def printObjDia(self):
         print("Frame width: ", self.spinBoxObjDia.get())
 
+    def setObjPosTemp(self):
+        global spinBoxVal
+        spinBoxVal = self.spinBoxObjPos.get()
+        setObjPos(spinBoxVal)
 
     def setObjDia(self):
         print("Object diameter changed manually to: ",self.spinBoxObjDia.get())
