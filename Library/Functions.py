@@ -190,7 +190,7 @@ def pixcoordinate():
     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
 
-def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar):
+def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl):
     time.sleep(0.2)
     print("Writing data to file ..")
 #    coordArray = np.array([])
@@ -200,10 +200,14 @@ def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,
     df1 = pd.DataFrame(data)
     df1.replace('',np.nan, inplace = True)
     timeActual = time.strftime("%d%m%y-%H%M%S")
-    df1.to_csv("./Logging/OrbitCoordinatesPixel_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    if PIDIncl == 0:
+        df1.to_csv("./Logging/OrbitCoordinates_OpenLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    elif PIDIncl == 1:
+        df1.to_csv("./Logging/OrbitCoordinates_ClosedLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
     #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
     time.sleep(0.2)
     print("Data written")
+
 
 
 def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):

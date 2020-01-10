@@ -96,7 +96,6 @@ valueVdef = 90
 #window = tk.Tk()
 
 
-
 def setObjPos(spinBoxVal):
     print("Object position changed manually to: ",spinBoxVal)
     global globObjPos
@@ -718,7 +717,7 @@ class objectDetection():
 
 
                     # only proceed if the radius meets a minimum size
-                    if radius > 0.01:
+                    if (radius > 30 and radius < 40):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
                         cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
@@ -740,8 +739,9 @@ class objectDetection():
                     PixCoordY = np.nan
                     radius = np.nan
                     PixRadius = radius
-                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
-                    print("Contour radius: {:.2f}".format(radius))
+#                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+#                    print("Contour radius: {:.2f}".format(radius))
+                    print("No object detected ...")
 
                 # loop over the set of tracked points
                 for i in range(1, len(pts)):
@@ -771,6 +771,7 @@ class objectDetection():
                     pid = readConfigPID()
                     pid.update(PixCoordY)
                     pidOutputVal = float(pid.output)
+                    print("PID output",pid.output)
 
                 else:
                     pidOutputVal = np.nan
@@ -788,6 +789,7 @@ class objectDetection():
 #                except:
 #                    spinBoxVal = 0 #in mm
 
+                #open-loop control adjusted via the user interface
                 objZPos = setObjPos(spinBoxVal)
                 print("Obj Z position value: ",objZPos)
                 if (objZPos >= 0 and PIDIncl == 0):
@@ -801,6 +803,26 @@ class objectDetection():
                     byte1 = dataByte1[int(720 + objZPos)]
                     byte2 = dataByte2[int(720 + objZPos)]
                     byte3 = dataByte3[int(720 + objZPos)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+
+
+#                #open-loop control adjusted via the user interface
+                if (pidOutputVal <= 0 and PIDIncl == 1):
+                    objZPosCL = (pidOutputVal/200)
+                    byte1 = dataByte1[int(719 + objZPosCL)]
+                    byte2 = dataByte2[int(719 + objZPosCL)]
+                    byte3 = dataByte3[int(719 + objZPosCL)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+
+                elif (pidOutputVal > 0 and PIDIncl == 1):
+                    objZPosCL = (pidOutputVal/200)
+                    byte1 = dataByte1[int(objZPosCL)]
+                    byte2 = dataByte2[int(objZPosCL)]
+                    byte3 = dataByte3[int(objZPosCL)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
@@ -850,7 +872,7 @@ class objectDetection():
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar)
+            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl)
             writePIDOutput(timeArray,coordArrayY,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
