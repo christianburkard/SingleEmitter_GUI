@@ -69,7 +69,8 @@ cameraChoice = [
     ("PiCamera"),
     ("USB Camera"),
     ("Stereo Camera"),
-    ("USB Camera PID")]
+    ("USB Camera PID"),
+    ("Cropped PID")]
 
 modeMeasuring = [
         ("Mode 1"),
@@ -659,13 +660,16 @@ class objectDetection():
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
                 frame = imutils.resize(frame, width=frameWidth)
+                frameCropped = imutils.resize(frame, width=frameWidth)
 
                 height, width, channels = frame.shape
                 deltaX = width/2 #x-offset for centering image coordinate system
                 deltaY = height/2 #y-offset for centering image coordinate system
+
 #                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 #                edged = cv2.Canny(gray,50,100)
                 blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+#                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
                 hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
     #            grayscale = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
     #
@@ -717,7 +721,9 @@ class objectDetection():
 
 
                     # only proceed if the radius meets a minimum size
-                    if (radius > 30 and radius < 40):
+                    if (radius > 10 and radius < 60):
+#                    if (radius > 0):
+
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
                         cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
@@ -751,10 +757,10 @@ class objectDetection():
                         continue
 
                     # show mask images
-    #            cv2.imshow('HSV', mask1)
-    #            cv2.imshow('Erode', mask2)
-    #            cv2.imshow('Dilate', mask3)
-    #            cv2.imshow("Median Filter", mask4)
+                cv2.imshow('HSV', mask1)
+                cv2.imshow('Erode', mask2)
+                cv2.imshow('Dilate', mask3)
+                cv2.imshow("Median Filter", mask4)
                 if reticleIncl == 1:
                     height, width, channels = frame.shape
                     frame = frame.copy()
@@ -900,6 +906,52 @@ class objectDetection():
 
         if selected == 2:
 
+            try:
+                dataByte1, dataByte2, dataByte3 = defaultLookUp()
+            except:
+            #read in values from look-up table
+                dataByte1, dataByte2, dataByte3 = defLookUpTable()
+
+            # construct the argument parse and parse the arguments
+            ap = argparse.ArgumentParser()
+            args = vars(ap.parse_args())
+            buffer = 120
+            try:
+                blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
+                print("Costumized HSV values entered ...")
+            except:
+                blackUpper = (100, 90, 90)
+                print("Set HSV default values ")
+            blackLower = (0, 0, 0)
+            pts = deque(maxlen=buffer)
+
+
+            # allow the camera or video file to warm up
+            time.sleep(0.2)
+            tracker = None
+            writer = None
+            confdef = 0.2
+            framenum = 0
+            fps = FPSOutput().start()
+            coordArrayX = np.array([])
+            coordArrayY = np.array([])
+            radiusArray = np.array([])
+            timeArray = np.array([])
+            tempFrames = np.array([])
+            tempPartDiaPixels = np.array([])
+            pidOutputArray = np.array([])
+
+            try:
+                frameWidth = int(globFrameWidth)
+            except:
+                frameWidth = 720
+                print("Default frame width: ", frameWidth)
+            try:
+                objDia = int(globObjDia)
+            except:
+                objDia = 2 #in mm
+                print("Default object diameter: ", objDia)
+
             print("Starting up cameras ...")
             time.sleep(0.5)
 
@@ -914,6 +966,103 @@ class objectDetection():
                 # define size of image
                 frame0 = imutils.resize(frame0, width = 1024)
                 frame1 = imutils.resize(frame1, width = 1024)
+                height0, width0, channels0 = frame0.shape
+                height1, width1, channels1 = frame1.shape
+                deltaX = width0/2 #x-offset for centering image coordinate system
+                deltaY = height0/2 #y-offset for centering image coordinate system
+
+                blurred0 = cv2.GaussianBlur(frame0, (11, 11), 0)
+#                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+                hsv = cv2.cvtColor(blurred0, cv2.COLOR_BGR2HSV)
+
+                # mask for black color
+                mask10 = cv2.inRange(blurred0, blackLower, blackUpper)
+                mask20 = cv2.erode(mask10, None, iterations=2)
+
+                #Apply median filter
+                mask30 = cv2.dilate(mask20, None, iterations=1)
+                mask40 = cv2.medianBlur(mask30,5)
+
+                # find contours in the mask and initialize the current
+                # (x, y) center of the object
+                cnts0 = cv2.findContours(mask30.copy(), cv2.RETR_EXTERNAL,
+                    cv2.CHAIN_APPROX_SIMPLE)
+                cnts0 = imutils.grab_contours(cnts0)
+                center = None
+
+    #            stopTimer()
+                print("Contour length: ",len(cnts0))
+                # only proceed if at least one contour was found
+                if len(cnts0) > 0:
+                    # find the largest contour in the mask, then use
+                    # it to compute the minimum enclosing circle and
+                    # centroid
+                    c = max(cnts0, key=cv2.contourArea)
+                    ((x, y), radius) = cv2.minEnclosingCircle(c)
+                    M = cv2.moments(c)
+                    if int(M["m00"]) == 0:
+                        center = np.nan
+                        PixCoordX = np.nan
+                        PixCoordY = np.nan
+                        radius = np.nan
+                    else:
+                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+                        PixCoordX = (center[0]-deltaX)
+                        PixCoordY = (center[1]-deltaY)*(-1)
+                        radius = radius
+                        pixDiameter = 2*radius
+                    print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+
+                    # only proceed if the radius meets a minimum size
+                    if (radius > 10 and radius < 60):
+#                    if (radius > 0):
+                        # draw the circle and centroid on the frame,
+                        # then update the list of tracked points
+                        cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
+                        cv2.circle(frame, center, 5, (0, 0, 255), -1)
+
+                # update the points queue
+                    try:
+                        print("Contour radius: {:.2f}".format(radius))
+                        PixRadius = radius
+                    except:
+                        print("No radius detected")
+                        PixCoordX = np.nan
+                        PixCoordX = np.nan
+                else:
+                    PixCoordX = np.nan
+                    PixCoordY = np.nan
+                    radius = np.nan
+                    PixRadius = radius
+#                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+#                    print("Contour radius: {:.2f}".format(radius))
+                    print("No object detected ...")
+
+                # loop over the set of tracked points
+                for i in range(1, len(pts)):
+                    # if either of the tracked points are None, ignore
+                    # them
+                    if pts[i - 1] is None or pts[i] is None:
+                        continue
+
+                    # show mask images
+                cv2.imshow('HSV', mask10)
+#                cv2.imshow('Erode', mask20)
+#                cv2.imshow('Dilate', mask30)
+#                cv2.imshow("Median Filter", mask40)
+
+
+                if reticleIncl == 1:
+                    frame0 = frame0.copy()
+                    cv2.circle(frame0, (int(width0/2), int(height0/2)), 10, (255, 0, 0), -1)
+                    cv2.line(frame0, (int(width0/2-100), int(height0/2)), (int(width0/2+100), int(height0/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+                    cv2.line(frame0, (int(width0/2), int(height0/2-100)), (int(width0/2), int(height0/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
+
+                if reticleIncl == 1:
+                    frame0 = frame0.copy()
+                    cv2.circle(frame1, (int(width1/2), int(height1/2)), 10, (255, 0, 0), -1)
+                    cv2.line(frame1, (int(width1/2-100), int(height1/2)), (int(width1/2+100), int(height1/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+                    cv2.line(frame1, (int(width1/2), int(height1/2-100)), (int(width1/2), int(height1/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
 
                 if (ret0):
                     # Display the resulting frame
@@ -927,6 +1076,7 @@ class objectDetection():
                     break
 
             # When everything is done, release the capture
+            print("Camera conntection closed")
             video_capture_0.release()
             video_capture_1.release()
             cv2.destroyAllWindows()
@@ -1176,6 +1326,352 @@ class objectDetection():
             ser.close()
             cv2.destroyAllWindows()
 
+###########################################################
+#### USB camera setup for Cropped windows with deep vision
+###########################################################
+
+    def objectDetectionCropped(self,selected,PIDIncl,reticleIncl):
+
+
+        if selected == 4:
+
+            time.sleep(0.2)
+            #Start timer
+    #        cmdStartTimer()
+
+            try:
+                frameWidth = int(globFrameWidth)
+            except:
+                frameWidth = 720
+                print("Default frame width: ", frameWidth)
+
+            try:
+                objDia = int(globObjDia)
+            except:
+                objDia = 2 #in mm
+                print("Default object diameter: ", objDia)
+
+            P = 0.5
+            I = 1.5
+            D = 0.3
+            posZ = 0
+            initPIDParams(posZ,P,I,D)
+            time.sleep(0.1)
+            createConfigPID()
+            time.sleep(0.1)
+
+            try:
+                dataByte1, dataByte2, dataByte3 = defaultLookUp()
+            except:
+            #read in values from look-up table
+                dataByte1, dataByte2, dataByte3 = defLookUpTable()
+
+            # construct the argument parse and parse the arguments
+            ap = argparse.ArgumentParser()
+            args = vars(ap.parse_args())
+            buffer = 120
+            # define the lower and upper boundaries of the "black"
+            try:
+                blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
+                print("Costumized HSV values entered ...")
+            except:
+                blackUpper = (100, 90, 90)
+                print("Set HSV default values ")
+            blackLower = (0, 0, 0)
+            pts = deque(maxlen=buffer)
+
+            # if a video path was not supplied, grab the reference
+            # to the webcam
+            if not args.get("video", False):
+                print("Starting video stream...")
+    #            vs = VideoStream(src=0).start()
+
+                #-threaded videostream
+                vs = WebcamVideoStream(src=0).start()
+
+            # otherwise, grab a reference to the video file
+            else:
+                print(" No video stream possible")
+
+            # allow the camera or video file to warm up
+            time.sleep(0.2)
+            tracker = None
+            writer = None
+            confdef = 0.2
+            framenum = 0
+            fps = FPSOutput().start()
+            coordArrayX = np.array([])
+            coordArrayY = np.array([])
+            radiusArray = np.array([])
+            timeArray = np.array([])
+            tempFrames = np.array([])
+            tempPartDiaPixels = np.array([])
+            pidOutputArray = np.array([])
+
+
+            # keep looping
+            while True:
+
+    #            startTimer()
+                # grab the current frame
+                frame = vs.read()
+
+                # handle the frame from VideoCapture or VideoStream
+                frame = frame[1] if args.get("video", False) else frame
+
+                # if we are viewing a video and we did not grab a frame,
+                # then we have reached the end of the video
+                if frame is None:
+                    print("No video preview possible")
+                    break
+
+                # resize the frame, blur it, and convert it to the HSV
+                # color space
+                frame = imutils.resize(frame, width=frameWidth)
+                frameCropped = imutils.resize(frame, width=frameWidth)
+
+                height, width, channels = frame.shape
+                deltaX = width/2 #x-offset for centering image coordinate system
+                deltaY = height/2 #y-offset for centering image coordinate system
+                xCropped = int(deltaX)
+                yCropped = int(deltaY)
+                h1 = 200
+                h2 = 200
+                w1 = 200
+                w2 = 200
+                crop_img = frameCropped[xCropped-w1:xCropped+w2, yCropped-h1:yCropped+h2]
+                heightCropped, widthCropped, channelsCropped = crop_img.shape
+                deltaXCropped = widthCropped/2 #x-offset for centering image coordinate system
+                deltaYCropped = heightCropped/2 #y-offset for centering image coordinate system
+#                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#                edged = cv2.Canny(gray,50,100)
+                blurred = cv2.GaussianBlur(crop_img, (11, 11), 0)
+#                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+                hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+    #            grayscale = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
+    #
+                # construct a mask for the color "black", then perform
+                # a series of dilations and erosions to remove any small
+                # blobs left in the mask
+            #    mask = cv2.inRange(hsv, greenLower, greenUpper)
+            #    mask = cv2.erode(mask, None, iterations=2)
+            #    mask = cv2.dilate(mask, None, iterations=2)
+
+                # mask for black color
+                mask1 = cv2.inRange(blurred, blackLower, blackUpper)
+                mask2 = cv2.erode(mask1, None, iterations=2)
+
+                #Apply median filter
+                mask3 = cv2.dilate(mask2, None, iterations=1)
+                mask4 = cv2.medianBlur(mask3,5)
+
+                # find contours in the mask and initialize the current
+                # (x, y) center of the object
+                cnts = cv2.findContours(mask3.copy(), cv2.RETR_EXTERNAL,
+                    cv2.CHAIN_APPROX_SIMPLE)
+                cnts = imutils.grab_contours(cnts)
+                center = None
+
+    #            stopTimer()
+                print("Contour length: ",len(cnts))
+                # only proceed if at least one contour was found
+                if len(cnts) > 0:
+                    # find the largest contour in the mask, then use
+                    # it to compute the minimum enclosing circle and
+                    # centroid
+                    c = max(cnts, key=cv2.contourArea)
+                    ((x, y), radius) = cv2.minEnclosingCircle(c)
+                    M = cv2.moments(c)
+                    if int(M["m00"]) == 0:
+                        center = np.nan
+                        PixCoordX = np.nan
+                        PixCoordY = np.nan
+                        radius = np.nan
+                    else:
+                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+                        PixCoordX = (center[0]-deltaXCropped)
+                        PixCoordY = (center[1]-deltaYCropped)*(-1)
+                        radius = radius
+                        pixDiameter = 2*radius
+                    print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+
+
+
+                    # only proceed if the radius meets a minimum size
+                    if (radius > 10 and radius < 60):
+#                    if (radius > 0):
+
+                        # draw the circle and centroid on the frame,
+                        # then update the list of tracked points
+                        cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
+                        cv2.circle(frame, center, 5, (0, 0, 255), -1)
+
+
+#                    elif radius < 20:
+
+                # update the points queue
+                    try:
+                        print("Contour radius: {:.2f}".format(radius))
+                        PixRadius = radius
+                    except:
+                        print("No radius detected")
+                        PixCoordX = np.nan
+                        PixCoordX = np.nan
+                else:
+                    PixCoordX = np.nan
+                    PixCoordY = np.nan
+                    radius = np.nan
+                    PixRadius = radius
+#                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
+#                    print("Contour radius: {:.2f}".format(radius))
+                    print("No object detected ...")
+
+                # loop over the set of tracked points
+                for i in range(1, len(pts)):
+                    # if either of the tracked points are None, ignore
+                    # them
+                    if pts[i - 1] is None or pts[i] is None:
+                        continue
+
+                    # show mask images
+                cv2.imshow('HSV', mask1)
+                cv2.imshow('Erode', mask2)
+                cv2.imshow('Dilate', mask3)
+                cv2.imshow("Median Filter", mask4)
+                if reticleIncl == 1:
+                    height, width, channels = frame.shape
+                    frame = frame.copy()
+                    cv2.circle(frame, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
+                    cv2.line(frame, (int(width/2-100), int(height/2)), (int(width/2+100), int(height/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+                    cv2.line(frame, (int(width/2), int(height/2-100)), (int(width/2), int(height/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
+
+                # show the frame to our screen
+#                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                cv2.imshow("Frame", frame)
+                key = cv2.waitKey(1) & 0xFF
+
+                if PIDIncl == 1:
+                    pid = readConfigPID()
+                    pid.update(PixCoordY)
+                    pidOutputVal = float(pid.output)
+                    print("PID output",pid.output)
+
+                else:
+                    pidOutputVal = np.nan
+
+#                print("PID output: ",pid.output)
+                # if the 'q' key is pressed, stop the loop
+                if key == ord("r"):
+    #                cmdStopTimer()
+                    break
+                elif selectedStopAll == 1:
+                    break
+
+#                try:
+#                    spinBoxVal = int(spinBoxVal)
+#                except:
+#                    spinBoxVal = 0 #in mm
+
+                #open-loop control adjusted via the user interface
+                objZPos = setObjPos(spinBoxVal)
+                print("Obj Z position value: ",objZPos)
+                if (objZPos >= 0 and PIDIncl == 0):
+                    byte1 = dataByte1[int(objZPos)]
+                    byte2 = dataByte2[int(objZPos)]
+                    byte3 = dataByte3[int(objZPos)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+                elif (objZPos >= 0 and PIDIncl == 0):
+                    byte1 = dataByte1[int(720 + objZPos)]
+                    byte2 = dataByte2[int(720 + objZPos)]
+                    byte3 = dataByte3[int(720 + objZPos)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+
+
+#                #open-loop control adjusted via the user interface
+                if (pidOutputVal <= 0 and PIDIncl == 1):
+                    objZPosCL = (pidOutputVal/200)
+                    byte1 = dataByte1[int(719 + objZPosCL)]
+                    byte2 = dataByte2[int(719 + objZPosCL)]
+                    byte3 = dataByte3[int(719 + objZPosCL)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+
+                elif (pidOutputVal > 0 and PIDIncl == 1):
+                    objZPosCL = (pidOutputVal/200)
+                    byte1 = dataByte1[int(objZPosCL)]
+                    byte2 = dataByte2[int(objZPosCL)]
+                    byte3 = dataByte3[int(objZPosCL)]
+                    values = bytearray([byte1, byte2, byte3])
+                    serialObject.write(values)
+                    print("Serial Values: ",byte1)
+
+                frameCounter = framenum + 1
+                tempFrames = np.append(tempFrames,frameCounter)
+                try:
+                    tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter)
+                except:
+                    None
+                pidOutputArray = np.append(pidOutputArray,pidOutputVal)
+                coordArrayX = np.append(coordArrayX,abs(PixCoordX))
+                coordArrayY = np.append(coordArrayY,abs(PixCoordY))
+                radiusArray = np.append(radiusArray,abs(PixRadius))
+                timeArray = np.append(timeArray,time.time()) # time in seconds
+                # update counter
+                framenum = framenum + 1
+                print("Framenumber: ",framenum)
+#
+#                print("PID Array length: ",len(pidOutputArray))
+#                print("coordArrayY: ",len(coordArrayY))
+#                print("Time array: ",len(timeArray))
+
+                window.update()
+
+#                time.sleep(0.5)
+                # Update fps counter
+                fps.update()
+
+
+            # stop timer and disp. fps information
+            fps.stop()
+            fpsVar = float((fps.fps()))
+            print("Elapsed time: {:.2f}".format(fps.elapsed()))
+            print("Approx. FPS: {:.2f}".format(fps.fps()))
+
+            #calculate mean diameter
+            meanPartDia = sum(tempPartDiaPixels)/frameCounter
+            print("Mean particle diameter / px : {:.2f}".format(meanPartDia))
+
+            # transform from px to mm
+            meanPartDiamm = meanPartDia/objDia
+            print("Particle resolution / px/mm : {:.2f}".format(meanPartDiamm))
+
+            # time per frame
+            meanTimeFrame = fps.elapsed()/framenum
+            print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
+#            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
+
+            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl)
+            writePIDOutput(timeArray,coordArrayY,pidOutputArray)
+
+            # if we are not using a video file, stop the camera video stream
+            if not args.get("video", False):
+                vs.stop()
+
+            # otherwise, release the camera
+            else:
+                vs.release()
+
+            # close all windows
+            cv2.destroyAllWindows()
+
+#    def _objectDetectionUSBCamera(self,selected,reticleIncl):
+#
+#        threading.Thread(target=self.objectDetectionUSBCamera).start()
 
 
 class GUI():
@@ -1415,6 +1911,8 @@ class GUI():
             objectDetection.objectDetectionOther(self,selected,PIDIncl,reticleIncl)
         elif selected == 3:
             objectDetection.objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl)
+        elif selected == 4:
+            objectDetection.objectDetectionCropped(self,selected,PIDIncl,reticleIncl)
 
 
     def setPIDIncl(self):
