@@ -1807,6 +1807,8 @@ class GUI():
         self.PIDBox = Checkbutton(self.master, text = "Include PID     ", variable=self.varPIDBox,command=self.setPIDIncl)
         self.PIDBox.grid(column=1,row=7,sticky = tk.W,columnspan =1)
 
+        self.b19 = Button(self.master, text="Camera calibration ", command = self.openCamCalib)
+        self.b19.grid(column=7,row=9,sticky = tk.W+tk.E,columnspan =1)
 
     def printValueH(self):
         print("H-value: {} ".format(self.spinBoxH.get()))
@@ -1851,8 +1853,16 @@ class GUI():
         globObjDia = int(self.spinBoxObjDia.get())
         return globObjDia
 
+
     def setPIDPlot(self):
         showPIDPlot()
+
+
+    def openCamCalib(self):
+        self.master.withdraw()
+        self.newWindow = tk.Toplevel(self.master)
+        newBtnCamCalib = camCalib(self.newWindow)
+        print("Camera calibration setup opened")
 
 
     def printFrameWidth(self):
@@ -1932,6 +1942,7 @@ class GUI():
     def stopAll(self):
         global selectedStopAll
         selectedStopAll = 1
+
 
     def clickedMeanDia():
         PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
@@ -2146,6 +2157,76 @@ class winZClosedLoop():
     def destroyWind(self):
         window.destroy()
         sys.exit()
+
+
+class camCalib():
+
+    def __init__(self, master, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.master = master
+        self.frame = Frame(self.master)
+        self.master.lift()
+
+        self.master.title("Camera calibration")
+        self.master.geometry('600x400+1000+600')
+
+
+        self.modeChoice = tk.IntVar()
+        self.modeMeasuring = modeMeasuring
+        selected = tk.IntVar()
+
+        self.stpmsm = tk.Button(self.master, text = "Camera test", command = connectFPGA)
+#        self.stpmsm.grid(column= 3, row = 4, sticky = tk.W+tk.E,columnspan = 1)
+        self.stpmsm.grid(column=3,row=1,sticky = tk.W)
+
+        self.shworb = tk.Button(self.master, text = "Chess cycle", command = browseLookUp)
+#        self.shworb.grid(column= 3, row = 5, sticky =tk.W+tk.E,columnspan = 1)
+        self.shworb.grid(column=3,row=2,sticky = tk.W)
+
+        self.bck = tk.Button(self.master, text = "Calibration", command = self.mainGUI)
+#        self.bck.grid(column= 3, row = 6, sticky = tk.W+tk.E,columnspan = 1)
+        self.bck.grid(column=3,row=3,sticky = tk.W)
+
+        self.setBtn = tk.Button(self.master, text = "Tuning", command = self.printValues)
+#        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
+        self.setBtn.grid(column=3,row=4,sticky = tk.W)
+
+
+        self.setBtnRT = tk.Button(self.master, text="Real-Time ")
+#        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
+        self.setBtnRT.grid(column=3,row=5,sticky = tk.W)
+
+
+
+#
+
+
+    def mainGUI(self):
+#        window.destroy()
+        self.master.withdraw()
+        self.master = tk.Toplevel(self.master)
+        bckBtn = GUI(self.master,cameraChoice)
+
+
+    def printValues(self):
+        print("List value is: ", self.spinBoxZ.get())
+        listValue = self.spinBoxZ.get()
+        funcOpenLoop(listValue)
+
+
+    def printScaleVal(self):
+#        print("Scaler value: {} ".format(self.setScaler.get()))
+        print("Scaler value: {} ")
+
+
+    def destroyWind(self):
+        window.destroy()
+        sys.exit()
+
+
+
+
 
 key = cv2.waitKey(1) & 0xFF
 
