@@ -21,6 +21,10 @@ from Library.FFTPlot import *
 from Library.pathFinder import *
 from Library.settings import *
 from Library import PID
+from Library.stereoCameraTest import *
+from Library.stereoChessRecognition import *
+from Library.Calibration3D import *
+from Library.depthMapTuning import *
 import tkinter as tk
 from matplotlib import pyplot as plt
 import numpy as np
@@ -935,6 +939,7 @@ class objectDetection():
             fps = FPSOutput().start()
             coordArrayX = np.array([])
             coordArrayY = np.array([])
+            coordArrayZ = np.array([])
             radiusArray = np.array([])
             timeArray = np.array([])
             tempFrames = np.array([])
@@ -1004,11 +1009,13 @@ class objectDetection():
                         center = np.nan
                         PixCoordX = np.nan
                         PixCoordY = np.nan
+                        PixCoordZ = np.nan
                         radius = np.nan
                     else:
                         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                         PixCoordX = (center[0]-deltaX)
                         PixCoordY = (center[1]-deltaY)*(-1)
+                        PixCoordZ = 0
                         radius = radius
                         pixDiameter = 2*radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
@@ -1029,9 +1036,11 @@ class objectDetection():
                         print("No radius detected")
                         PixCoordX = np.nan
                         PixCoordX = np.nan
+                        PixCoordZ = np.nan
                 else:
                     PixCoordX = np.nan
                     PixCoordY = np.nan
+                    PixCoordZ = np.nan
                     radius = np.nan
                     PixRadius = radius
 #                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
@@ -1679,17 +1688,21 @@ class GUI():
     def __init__(self, master,cameraChoice, *args, **kwargs):
 #        Frame.__init__(self, master, *args, **kwargs)
         super().__init__(*args, **kwargs)
+         kwargs["style"] = "CustomNotebook"
+         ttk.Notebook.__init__(self, *args, **kwargs)
         self.master = master
 #        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
         self.master.title("TinyLev")
         self.master.geometry("900x650+1000+600")
-
+#        self.master.configure(background ='Gray'
 
 #        selected = tk.IntVar()
         self.cameraChoice = cameraChoice
         self.choice = tk.IntVar()
         self.label1 = tk.Label(self.master, text = "Select Camera").grid(row=0, sticky=tk.W, columnspan=3)
+
+        self.master.note = tk.N
 
         varSerial = StringVar(self.master) #default value for serial print
         varSerial.set("0")
@@ -2176,55 +2189,76 @@ class camCalib():
         self.modeMeasuring = modeMeasuring
         selected = tk.IntVar()
 
-        self.stpmsm = tk.Button(self.master, text = "Camera test", command = connectFPGA)
+        self.stpmsm = tk.Button(self.master, text = "Camera test", command = self.setStereoCameraTest)
 #        self.stpmsm.grid(column= 3, row = 4, sticky = tk.W+tk.E,columnspan = 1)
-        self.stpmsm.grid(column=3,row=1,sticky = tk.W)
+        self.stpmsm.grid(column=3,row=1,sticky = tk.W+tk.E)
 
-        self.shworb = tk.Button(self.master, text = "Chess cycle", command = browseLookUp)
+        self.shworb = tk.Button(self.master, text = "Chess cycle", command = self.setChessCycle)
 #        self.shworb.grid(column= 3, row = 5, sticky =tk.W+tk.E,columnspan = 1)
-        self.shworb.grid(column=3,row=2,sticky = tk.W)
+        self.shworb.grid(column=3,row=2,sticky = tk.W+tk.E)
 
-        self.bck = tk.Button(self.master, text = "Calibration", command = self.mainGUI)
+        self.bck = tk.Button(self.master, text = "Calibration", command = self.setCalibration)
 #        self.bck.grid(column= 3, row = 6, sticky = tk.W+tk.E,columnspan = 1)
-        self.bck.grid(column=3,row=3,sticky = tk.W)
+        self.bck.grid(column=3,row=3,sticky = tk.W+tk.E)
 
-        self.setBtn = tk.Button(self.master, text = "Tuning", command = self.printValues)
+        self.setBtn = tk.Button(self.master, text = "Tuning", command = self.setTuning)
 #        self.setBtn.grid(column=4, row = 9,sticky = tk.W+tk.E, columnspan = 1)
-        self.setBtn.grid(column=3,row=4,sticky = tk.W)
+        self.setBtn.grid(column=3,row=4,sticky = tk.W+tk.E)
 
-
-        self.setBtnRT = tk.Button(self.master, text="Real-Time ")
+        self.setBtnRT = tk.Button(self.master, text="Real-Time",command = self.setRealTime)
 #        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
-        self.setBtnRT.grid(column=3,row=5,sticky = tk.W)
+        self.setBtnRT.grid(column=3,row=5,sticky = tk.W+tk.E)
+
+        self.setBtnBack = tk.Button(self.master, text="Back",command = self.setBackMain)
+#        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
+        self.setBtnBack.grid(column=4,row=4,sticky = tk.W+tk.E)
+
+        self.setBtnClose = tk.Button(self.master, text="Close",command = self.setCloseAll)
+#        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
+        self.setBtnClose.grid(column=4,row=5,sticky = tk.W+tk.E)
 
 
-
-#
-
-
-    def mainGUI(self):
+    def setBackMain(self):
 #        window.destroy()
         self.master.withdraw()
         self.master = tk.Toplevel(self.master)
         bckBtn = GUI(self.master,cameraChoice)
 
 
-    def printValues(self):
-        print("List value is: ", self.spinBoxZ.get())
-        listValue = self.spinBoxZ.get()
-        funcOpenLoop(listValue)
+    def setStereoCameraTest(self):
+        stereoCameraTest()
+        print("Camera test closed")
 
 
-    def printScaleVal(self):
-#        print("Scaler value: {} ".format(self.setScaler.get()))
-        print("Scaler value: {} ")
+    def setChessCycle(self):
+        startChessCycle()
+        print("Chess cycle closed")
+
+
+    def setCalibration(self):
+        start3dCalibration()
+        print("3D calibraton closed")
+
+
+    def setTuning(self):
+        startdepthMapTuning()
+        print("Tuning closed")
+
+
+    def setRealTime(self):
+
+        print("Real time depth map closed")
+
+
+    def setCloseAll(self):
+
+        print("")
+
 
 
     def destroyWind(self):
         window.destroy()
         sys.exit()
-
-
 
 
 
