@@ -1353,13 +1353,11 @@ class objectDetection():
             except:
                 frameWidth = 720
                 print("Default frame width: ", frameWidth)
-
             try:
                 objDia = int(globObjDia)
             except:
                 objDia = 2 #in mm
                 print("Default object diameter: ", objDia)
-
             P = 0.5
             I = 1.5
             D = 0.3
@@ -1368,7 +1366,6 @@ class objectDetection():
             time.sleep(0.1)
             createConfigPID()
             time.sleep(0.1)
-
             try:
                 dataByte1, dataByte2, dataByte3 = defaultLookUp()
             except:
@@ -1394,16 +1391,20 @@ class objectDetection():
             if not args.get("video", False):
                 print("Starting video stream...")
     #            vs = VideoStream(src=0).start()
-
                 #-threaded videostream
-                vs = WebcamVideoStream(src=0).start()
-
+                vs0 = WebcamVideoStream(src=0).start()
+                vs1 = WebcamVideoStream(src=1).start()
             # otherwise, grab a reference to the video file
             else:
                 print(" No video stream possible")
-
             # allow the camera or video file to warm up
             time.sleep(0.2)
+            deltaWidth = 50
+            deltaHeight = 50
+            h1 = 200
+            h2 = 200
+            w1 = 200
+            w2 = 200
             tracker = None
             writer = None
             confdef = 0.2
@@ -1420,43 +1421,45 @@ class objectDetection():
 
             # keep looping
             while True:
-
-    #            startTimer()
                 # grab the current frame
-                frame = vs.read()
-
+                frame0 = vs0.read()
+                frame1 = vs1.read()
                 # handle the frame from VideoCapture or VideoStream
-                frame = frame[1] if args.get("video", False) else frame
-
+                frame0 = frame0[1] if args.get("video", False) else frame0
+                frame1 = frame1[1] if args.get("video", False) else frame1
                 # if we are viewing a video and we did not grab a frame,
                 # then we have reached the end of the video
-                if frame is None:
-                    print("No video preview possible")
+                if frame0 is None:
+                    print("No video preview of camera 0 possible")
                     break
-
+                if frame1 is None:
+                    print("No video preview of camera 1 possible")
+                    break
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
-                frame = imutils.resize(frame, width=frameWidth)
-                frameCropped = imutils.resize(frame, width=frameWidth)
+#                frame = imutils.resize(frame, width=frameWidth)
+                frameCropped0 = imutils.resize(frame0, width=frameWidth)
+                frameCropped1 = imutils.resize(frame1, width= frameWidth)
+#                halfCamWidth = int(cam_width/2)
+#                halfCamHeight = int(cam_height/2)
 
-                height, width, channels = frame.shape
-                deltaX = width/2 #x-offset for centering image coordinate system
-                deltaY = height/2 #y-offset for centering image coordinate system
-                xCropped = int(deltaX)
-                yCropped = int(deltaY)
-                h1 = 200
-                h2 = 200
-                w1 = 200
-                w2 = 200
-                crop_img = frameCropped[xCropped-w1:xCropped+w2, yCropped-h1:yCropped+h2]
-                heightCropped, widthCropped, channelsCropped = crop_img.shape
-                deltaXCropped = widthCropped/2 #x-offset for centering image coordinate system
-                deltaYCropped = heightCropped/2 #y-offset for centering image coordinate system
+                height, width, channels = frame0.shape
+                halfCamWidth = width/2 #x-offset for centering image coordinate system
+                halfCamHeight = height/2 #y-offset for centering image coordinate system
+                halfCamWidth = int(halfCamWidth)
+                halfCamHeight = int(halfCamHeight)
+                frameCropped0 = frameCropped0[halfCamHeight-deltaHeight:halfCamHeight+deltaHeight,halfCamWidth-deltaWidth:halfCamWidth+deltaWidth,:]
+                frameCropped1 = frameCropped1[halfCamHeight-deltaHeight:halfCamHeight+deltaHeight,halfCamWidth-deltaWidth:halfCamWidth+deltaWidth,:]
+
+#                crop_img = frameCropped[xCropped-w1:xCropped+w2, yCropped-h1:yCropped+h2]
+#                heightCropped, widthCropped, channelsCropped = crop_img.shape
+#                deltaXCropped = widthCropped/2 #x-offset for centering image coordinate system
+#                deltaYCropped = heightCropped/2 #y-offset for centering image coordinate system
 #                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 #                edged = cv2.Canny(gray,50,100)
-                blurred = cv2.GaussianBlur(crop_img, (11, 11), 0)
-#                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-                hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+                blurred0 = cv2.GaussianBlur(frameCropped0, (11, 11), 0)
+                blurred1 = cv2.GaussianBlur(frameCropped1, (11, 11), 0)
+                hsv0 = cv2.cvtColor(blurred0, cv2.COLOR_BGR2HSV)
     #            grayscale = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
     #
                 # construct a mask for the color "black", then perform
@@ -1467,56 +1470,60 @@ class objectDetection():
             #    mask = cv2.dilate(mask, None, iterations=2)
 
                 # mask for black color
-                mask1 = cv2.inRange(blurred, blackLower, blackUpper)
-                mask2 = cv2.erode(mask1, None, iterations=2)
+                mask10 = cv2.inRange(blurred0, blackLower, blackUpper)
+                mask11 = cv2.inRange(blurred1, blackLower, blackUpper)
+                mask20 = cv2.erode(mask10, None, iterations=2)
+                mask21 = cv2.erode(mask11, None, iterations=2)
 
                 #Apply median filter
-                mask3 = cv2.dilate(mask2, None, iterations=1)
-                mask4 = cv2.medianBlur(mask3,5)
+                mask30 = cv2.dilate(mask20, None, iterations=1)
+                mask31 = cv2.dilate(mask21, None, iterations=1)
+                mask40 = cv2.medianBlur(mask30,5)
+                mask41 = cv2.medianBlur(mask31,5)
 
                 # find contours in the mask and initialize the current
                 # (x, y) center of the object
-                cnts = cv2.findContours(mask3.copy(), cv2.RETR_EXTERNAL,
+                cnts0 = cv2.findContours(mask30.copy(), cv2.RETR_EXTERNAL,
                     cv2.CHAIN_APPROX_SIMPLE)
-                cnts = imutils.grab_contours(cnts)
-                center = None
+                cnts1 = cv2.findContours(mask31.copy(), cv2.RETR_EXTERNAL,
+                    cv2.CHAIN_APPROX_SIMPLE)
+                cnts0 = imutils.grab_contours(cnts0)
+                cnts1 = imutils.grab_contours(cnts1)
+                center0 = None
 
     #            stopTimer()
-                print("Contour length: ",len(cnts))
+                print("Contour length: ",len(cnts0))
                 # only proceed if at least one contour was found
-                if len(cnts) > 0:
+                if len(cnts0) > 0 and len(cnts1) > 0:
                     # find the largest contour in the mask, then use
                     # it to compute the minimum enclosing circle and
                     # centroid
-                    c = max(cnts, key=cv2.contourArea)
-                    ((x, y), radius) = cv2.minEnclosingCircle(c)
-                    M = cv2.moments(c)
-                    if int(M["m00"]) == 0:
-                        center = np.nan
-                        PixCoordX = np.nan
-                        PixCoordY = np.nan
-                        radius = np.nan
+                    c0 = max(cnts0, key=cv2.contourArea)
+                    c1 = max(cnts1, key=cv2.contourArea)
+                    ((x0, y0), radius0) = cv2.minEnclosingCircle(c0)
+                    ((x1, y1), radius1) = cv2.minEnclosingCircle(c1)
+
+                    M0 = cv2.moments(c0)
+                    if int(M0["m00"]) == 0:
+                        center0 = np.nan
+                        PixCoordX0 = np.nan
+                        PixCoordY0 = np.nan
+                        radius0 = np.nan
                     else:
-                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-                        PixCoordX = (center[0]-deltaXCropped)
-                        PixCoordY = (center[1]-deltaYCropped)*(-1)
+                        center = (int(M0["m10"] / M0["m00"]), int(M0["m01"] / M0["m00"]))
+                        PixCoordX = (center[0]-halfCamWidth)
+                        PixCoordY = (center[1]-halfCamHeight)*(-1)
                         radius = radius
                         pixDiameter = 2*radius
-                    print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
-
-
+                    print("PiX coordinate: {:.2f}".format(PixCoordX0), "  PiY coordinate: {:.2f}".format(PixCoordY0))
 
                     # only proceed if the radius meets a minimum size
-                    if (radius > 10 and radius < 60):
+                    if (radius0 > 10 and radius0 < 60) and (radius1 > 10 and radius1 < 60):
 #                    if (radius > 0):
-
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
-                        cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
-                        cv2.circle(frame, center, 5, (0, 0, 255), -1)
-
-
-#                    elif radius < 20:
+                        cv2.circle(frameCropped0, (int(x), int(y)), int(radius), (15, 186, 2), 10)
+                        cv2.circle(frameCropped0, center, 5, (0, 0, 255), -1)
 
                 # update the points queue
                     try:
@@ -1543,10 +1550,10 @@ class objectDetection():
                         continue
 
                     # show mask images
-                cv2.imshow('HSV', mask1)
-                cv2.imshow('Erode', mask2)
-                cv2.imshow('Dilate', mask3)
-                cv2.imshow("Median Filter", mask4)
+#                cv2.imshow('HSV', mask1)
+#                cv2.imshow('Erode', mask2)
+#                cv2.imshow('Dilate', mask3)
+#                cv2.imshow("Median Filter", mask4)
                 if reticleIncl == 1:
                     height, width, channels = frame.shape
                     frame = frame.copy()
@@ -1556,7 +1563,8 @@ class objectDetection():
 
                 # show the frame to our screen
 #                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-                cv2.imshow("Frame", frame)
+                cv2.imshow("Frame0", frameCropped0)
+                cv2.imshow("Frame1", frameCropped1)
                 key = cv2.waitKey(1) & 0xFF
 
                 if PIDIncl == 1:
@@ -1688,8 +1696,8 @@ class GUI():
     def __init__(self, master,cameraChoice, *args, **kwargs):
 #        Frame.__init__(self, master, *args, **kwargs)
         super().__init__(*args, **kwargs)
-         kwargs["style"] = "CustomNotebook"
-         ttk.Notebook.__init__(self, *args, **kwargs)
+#         kwargs["style"] = "CustomNotebook"
+#         ttk.Notebook.__init__(self, *args, **kwargs)
         self.master = master
 #        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
