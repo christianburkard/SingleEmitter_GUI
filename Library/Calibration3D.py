@@ -58,12 +58,12 @@ def start3dCalibration():
 
     print ('Starting calibration... It can take several minutes!')
     calibration = calibrator.calibrate_cameras()
-    calibration.export('./Data/calibData')
+    calibration.export('calibData')
     print ('Calibration complete!')
 
 
     # Lets rectify and show last pair after  calibration
-    calibration = StereoCalibration(input_folder='./Data/calibData')
+    calibration = StereoCalibration(input_folder='calibData')
     rectified_pair = calibration.rectify((imgLeft, imgRight))
 
     cv2.imshow('Left CALIBRATED', rectified_pair[0])
