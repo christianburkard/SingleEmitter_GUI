@@ -209,7 +209,6 @@ def writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,
     print("Data written")
 
 
-
 def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):
     time.sleep(0.2)
     print("Writing data to file ...")
@@ -220,6 +219,44 @@ def writePixelPositionRasp(timeArray,coordArrayX,coordArrayY,radiusArray):
     df1.replace('',np.nan, inplace = True)
     timeActual = time.strftime("%d%m%y-%H%M%S")
     df1.to_csv("/home/pi/Desktop/TinyLev/Logging/OrbitCoordinatesPixel_" + timeActual + ".csv",na_rep = np.nan, index=False)
+    #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
+    time.sleep(0.2)
+    print("Data written")
+
+
+def writePixelPositionPCCam1(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl):
+    time.sleep(0.2)
+    print("Writing data to file ..")
+#    coordArray = np.array([])
+    #coordArray = np.concatenate((coordArrayX, coordArrayY))
+    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum, 'FPS' : fpsVar}
+#    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
+    df1 = pd.DataFrame(data)
+    df1.replace('',np.nan, inplace = True)
+    timeActual = time.strftime("%d%m%y-%H%M%S")
+    if PIDIncl == 0:
+        df1.to_csv("./Logging/OrbitCoordinates_Camera1_OpenLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    elif PIDIncl == 1:
+        df1.to_csv("./Logging/OrbitCoordinates_Camera1_ClosedLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
+    time.sleep(0.2)
+    print("Data written")
+
+
+def writePixelPositionPCCam2(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl):
+    time.sleep(0.2)
+    print("Writing data to file ..")
+#    coordArray = np.array([])
+    #coordArray = np.concatenate((coordArrayX, coordArrayY))
+    data = {'Time' : timeArray,'X Coord' : coordArrayY, 'Y Coord' : coordArrayX, 'Radius' : radiusArray, 'Framenumber' : framenum, 'FPS' : fpsVar}
+#    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
+    df1 = pd.DataFrame(data)
+    df1.replace('',np.nan, inplace = True)
+    timeActual = time.strftime("%d%m%y-%H%M%S")
+    if PIDIncl == 0:
+        df1.to_csv("./Logging/OrbitCoordinates_Camera2_OpenLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    elif PIDIncl == 1:
+        df1.to_csv("./Logging/OrbitCoordinates_Camera2_ClosedLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
     #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
     time.sleep(0.2)
     print("Data written")
@@ -305,78 +342,6 @@ def showRadiusvsFrameRasp():
     plt.show()
     print("Radius Distribution Plotting done")
 
-#def showZvsTime():
-#    print("Z position vs time ...")
-#    file = filedialog.askopenfilename()
-#
-#    with open(file, 'r') as f:
-#        reader = csv.reader(f, delimiter=',')
-#        # get header from first row
-#        headers = next(reader)
-#        # get all the rows as a list
-#        data = list(reader)
-#        # transform data into numpy array
-#        data = np.array(data).astype(float)
-#        framemax = len(data[:,1])
-#
-#    dtime = np.zeros([framemax])
-#    tottime = np.array([])
-#
-#    timeinit = data[:framemax+1, 0]
-#    timelinenew = (data[:framemax, 3] - timeinit)
-#    dtime[0] = 0
-#
-#    for i in range(0,framemax-1):
-#    #    dtime[i] = 0
-#        dtime[i+1] = timeinit[i+1] - timeinit[i]
-#        tottime = np.append(dtime[i],tottime+dtime[i])
-#    # Plot the data
-#
-#    plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
-#    plt.title("Position Distribution")
-#    #plt.axis('equal')
-#    plt.xlabel("Time t / s")
-#    plt.ylabel("Z position z / px")
-#    plt.show()
-#    print("Z position vs time plotting done")
-#
-#
-#
-#def showXvsTime():
-#    print("Z position vs time ...")
-#    file = filedialog.askopenfilename()
-#
-#    with open(file, 'r') as f:
-#        reader = csv.reader(f, delimiter=',')
-#        # get header from first row
-#        headers = next(reader)
-#        # get all the rows as a list
-#        data = list(reader)
-#        # transform data into numpy array
-#        data = np.array(data).astype(float)
-#        framemax = len(data[:,1])
-#
-#    dtime = np.zeros([framemax])
-#    tottime = np.array([])
-#
-#    timeinit = data[:framemax+1, 0]
-#    timelinenew = (data[:framemax, 3] - timeinit)
-#    dtime[0] = 0
-#
-#    for i in range(0,framemax-1):
-#    #    dtime[i] = 0
-#        dtime[i+1] = timeinit[i+1] - timeinit[i]
-#        tottime = np.append(dtime[i],tottime+dtime[i])
-#    # Plot the data
-#
-#    plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
-#    plt.title("Position Distribution")
-#    #plt.axis('equal')
-#    plt.xlabel("Time t / s")
-#    plt.ylabel("Z position z / px")
-#    plt.show()
-#    print("Z position vs time plotting done")
-
 
 def showPosvsTime():
     print("Positions vs time ...")
@@ -441,9 +406,6 @@ def showPosvsTime():
 #    plt.ylabel("Z position z / px")
 #    plt.show()
     print("Z position vs time plotting done")
-
-
-
 
 
 def showOrbit():

@@ -72,9 +72,9 @@ line1 = []
 cameraChoice = [
     ("PiCamera"),
     ("USB Camera"),
-    ("Stereo Camera"),
     ("USB Camera PID"),
-    ("Cropped PID")]
+    ("Stereo Camera"),
+    ("Stereo Cropped")]
 
 modeMeasuring = [
         ("Mode 1"),
@@ -855,7 +855,7 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-
+                printCoordsGui(self, PixCoordX, PixCoordY)
                 window.update()
 
 #                time.sleep(0.5)
@@ -908,7 +908,7 @@ class objectDetection():
 
     def objectDetectionOther(self,selected,PIDIncl,reticleIncl):
 
-        if selected == 2:
+        if selected == 3:
 
             try:
                 dataByte1, dataByte2, dataByte3 = defaultLookUp()
@@ -1097,7 +1097,7 @@ class objectDetection():
 
     def objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl):
 
-        if selected == 3:
+        if selected == 2:
 
             time.sleep(0.2)
 
@@ -1420,6 +1420,9 @@ class objectDetection():
             coordArrayX0 = np.array([])
             coordArrayY0 = np.array([])
             radiusArray0 = np.array([])
+            coordArrayX1 = np.array([])
+            coordArrayY1 = np.array([])
+            radiusArray1 = np.array([])
             timeArray = np.array([])
             tempFrames = np.array([])
             tempPartDiaPixels = np.array([])
@@ -1455,15 +1458,27 @@ class objectDetection():
 #                halfCamWidth = int(cam_width/2)
 #                halfCamHeight = int(cam_height/2)
                 try:
-                    frameCropped0[0:(576-int(PixCoordX0)),0:480,:] = 255 #left side bar
-                    frameCropped0[188:400,544:1024,:] = 255 #right side bar
-                    frameCropped0[0:250,0:1024,:] = 255 #upper cross bar
-                    frameCropped0[326:576,0:1024,:] = 255 #lower cross bar
+                    frameCropped0[0:576,0:(480+(int(PixCoordX0))),:] = 255 #left side bar
+                    frameCropped0[188:400,(544+int(PixCoordX0)):1024,:] = 255 #right side bar
+                    frameCropped0[0:250-int(PixCoordY0),0:1024,:] = 255 #upper cross bar
+                    frameCropped0[326-int(PixCoordY0):576,0:1024,:] = 255 #lower cross bar
                 except:
                     frameCropped0[0:576,0:480,:] = 255 #left side bar
                     frameCropped0[188:400,544:1024,:] = 255 #right side bar
                     frameCropped0[0:250,0:1024,:] = 255 #upper cross bar
                     frameCropped0[326:576,0:1024,:] = 255 #lower cross bar
+
+
+                try:
+                    frameCropped1[0:576,0:(480+(int(PixCoordX1))),:] = 255 #left side bar
+                    frameCropped1[188:400,(544+int(PixCoordX1)):1024,:] = 255 #right side bar
+                    frameCropped1[0:250-int(PixCoordY1),0:1024,:] = 255 #upper cross bar
+                    frameCropped1[326-int(PixCoordY1):576,0:1024,:] = 255 #lower cross bar
+                except:
+                    frameCropped1[0:576,0:480,:] = 255 #left side bar
+                    frameCropped1[188:400,544:1024,:] = 255 #right side bar
+                    frameCropped1[0:250,0:1024,:] = 255 #upper cross bar
+                    frameCropped1[326:576,0:1024,:] = 255 #lower cross bar
 
                 frameCropped10 = frameCropped1[halfCamHeight1-int(deltaHeight1):halfCamHeight1+int(deltaHeight1),halfCamWidth1-int(deltaWidth1):halfCamWidth1+int(deltaWidth1),:]
                 frameCropped00 = frameCropped0[halfCamHeight0-int(deltaHeight0):halfCamHeight0+int(deltaHeight0),halfCamWidth0-int(deltaWidth0):halfCamWidth0+int(deltaWidth0),:]
@@ -1612,7 +1627,7 @@ class objectDetection():
                         radius1 = np.nan
 #                        radius1 = np.nan
                     # only proceed if the radius meets a minimum size
-                    if (radius1 > 20 and radius1 < 300):
+                    if (radius1 > 20 and radius1 < 100):
 #                    if (radius > 0):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
@@ -1647,7 +1662,7 @@ class objectDetection():
                     PixCoordX1 = np.nan
                     PixCoordY1 = np.nan
                     radius1 = np.nan
-                    PixRadius1 = radius
+                    PixRadius1 = radius1
 #                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 #                    print("Contour radius: {:.2f}".format(radius))
                     print("No object detected ...")
@@ -1752,6 +1767,9 @@ class objectDetection():
                 coordArrayX0 = np.append(coordArrayX0,abs(PixCoordX0))
                 coordArrayY0 = np.append(coordArrayY0,abs(PixCoordY0))
                 radiusArray0 = np.append(radiusArray0,abs(PixRadius0))
+                coordArrayX1 = np.append(coordArrayX1,abs(PixCoordX1))
+                coordArrayY1 = np.append(coordArrayY1,abs(PixCoordY1))
+                radiusArray1 = np.append(radiusArray1,abs(PixRadius1))
                 timeArray = np.append(timeArray,time.time()) # time in seconds
                 # update counter
                 framenum = framenum + 1
@@ -1760,7 +1778,7 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-
+                printCoordsGui(self, PixCoordX0, PixCoordY0)
                 window.update()
 
 #                time.sleep(0.5)
@@ -1787,7 +1805,8 @@ class objectDetection():
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPC(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,PIDIncl)
+            writePixelPositionPCCam1(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,PIDIncl)
+            writePixelPositionPCCam2(timeArray,coordArrayX1,coordArrayY1,radiusArray0,framenum,fpsVar,PIDIncl)
             writePIDOutput(timeArray,coordArrayY0,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
@@ -2054,9 +2073,9 @@ class GUI():
             objectDetection.objectDetectionPicamera(self,selected,PIDIncl,reticleIncl)
         elif selected == 1:
             objectDetection.objectDetectionUSBCamera(self,selected,PIDIncl,reticleIncl)
-        elif selected == 2:
-            objectDetection.objectDetectionOther(self,selected,PIDIncl,reticleIncl)
         elif selected == 3:
+            objectDetection.objectDetectionOther(self,selected,PIDIncl,reticleIncl)
+        elif selected == 2:
             objectDetection.objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl)
         elif selected == 4:
             objectDetection.objectDetectionCropped(self,selected,PIDIncl,reticleIncl)
@@ -2341,6 +2360,9 @@ class camCalib():
 #        self.setPnt.grid(column=2,row=9,sticky = tk.W+tk.E)
         self.setBtnClose.grid(column=4,row=5,sticky = tk.W+tk.E)
 
+        self.varRetBox = IntVar()
+        self.RetBox = Checkbutton(self.master, text = "Include Reticle", variable=self.varRetBox,command=self.setReticleIncl)
+        self.RetBox.grid(column=2,row=2,sticky = tk.W,columnspan =1)
 
     def setBackMain(self):
 #        window.destroy()
@@ -2348,9 +2370,14 @@ class camCalib():
         self.master = tk.Toplevel(self.master)
         bckBtn = GUI(self.master,cameraChoice)
 
+    def setReticleIncl(self):
+        global reticleIncl
+        print("Reticle value:",self.varRetBox.get()) #if checkbox is activated, value is equak to 1, otherwise 0
+        reticleIncl = self.varRetBox.get()
+
 
     def setStereoCameraTest(self):
-        stereoCameraTest()
+        stereoCameraTest(reticleIncl)
         print("Camera test closed")
 
 
@@ -2378,7 +2405,8 @@ class camCalib():
 
         print("")
 
-
+    def updateWindow1():
+        window1.update()
 
     def destroyWind(self):
         window.destroy()
@@ -2396,3 +2424,5 @@ if __name__ == '__main__':
     app = GUI(window,cameraChoice)
     window.mainloop()
     window.update()
+    window1 = tk.Tk()
+    appCalibCamera = camCalib(window1)

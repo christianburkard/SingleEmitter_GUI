@@ -9,8 +9,8 @@ Masterthesis: Closed-Loop Control of an Acoustic Levitation System
 from __future__ import print_function
 from imutils.video import VideoStream
 from imutils.video import FPS
-#from Library.ThreadsLib import FPSOutput
-#from Library.ThreadsLib import WebcamVideoStream
+from Library.ThreadsLib import FPSOutput
+from Library.ThreadsLib import WebcamVideoStream
 from imutils.video.pivideostream import PiVideoStream
 import tkinter as tk
 from matplotlib import pyplot as plt
@@ -43,7 +43,12 @@ import numpy as np
 import os
 from datetime import datetime
 
-def stereoCameraTest():
+def stereoCameraTest(reticleIncl):
+#    try:
+#        reticleIncl = reticleIncl
+#    except:
+#        reticleIncl = 0
+
     # File for captured image
     filename = './scenes/photo.png'
 
@@ -79,8 +84,8 @@ def stereoCameraTest():
         print("Starting video stream...")
 #        vs1 = VideoStream(src=0).start()
 #        vs2 = VideoStream(src=1).start()
-        cap1 = cv2.VideoCapture(0)
-        cap2 = cv2.VideoCapture(1)
+        cap1 = WebcamVideoStream(src=0).start()
+        cap2 = WebcamVideoStream(src=1).start()
     #    vs = WebcamVideoStream(src=0).start()
 
     # Capture frames from the camera
@@ -90,22 +95,34 @@ def stereoCameraTest():
         avgtime = avgtime + (timediff.total_seconds())
 #        frame1 = vs1.read()
 #        frame2 = vs2.read()
-        ret1, frame1 = cap1.read()
-        ret2, frame2 = cap2.read()
-        cap1.set(3,400)
-        cap2.set(4,400)
+        frame1 = cap1.read()
+        frame2 = cap2.read()
+#        cap1.set(3,400)
+#        cap2.set(4,400)
         # handle the frame from VideoCapture or VideoStream
         frame1 = frame1[1] if args.get("video", False) else frame1
         frame1 = imutils.resize(frame1, width=framewidth)
 
-        cv2.imshow("pair1", frame1)
+#        cv2.imshow("pair1", frame1)
         frame2 = frame2[1] if args.get("video", False) else frame2
         frame2 = imutils.resize(frame2, width=framewidth)
-        cv2.imshow("pair2", frame2)
+#        cv2.imshow("pair2", frame2)
         key = cv2.waitKey(1) & 0xFF
         t2 = datetime.now()
         counter = counter + 1
+        if reticleIncl == 1:
+            height, width, channels = frame1.shape
+            frame1 = frame1.copy()
+            cv2.circle(frame1, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
+            cv2.line(frame1, (int(width/2-100), int(height/2)), (int(width/2+100), int(height/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+            cv2.line(frame1, (int(width/2), int(height/2-100)), (int(width/2), int(height/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
+            cv2.circle(frame2, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
+            cv2.line(frame2, (int(width/2-100), int(height/2)), (int(width/2+100), int(height/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+            cv2.line(frame2, (int(width/2), int(height/2-100)), (int(width/2), int(height/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
         # if the `q` key was pressed, break from the loop and save last image
+        cv2.imshow("pair1", frame1)
+        cv2.imshow("pair2", frame2)
+
         if key == ord("r") :
             avgtime = avgtime/counter
             print ("Average time between frames: " + str(avgtime))
