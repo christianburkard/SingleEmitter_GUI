@@ -35,7 +35,6 @@ from collections import deque
 import time
 import dlib
 import csv
-import datetime
 import time
 import threading
 import queue
@@ -302,8 +301,8 @@ def showEMPDFile():
 def printCoordsGui(self, CoordR, CoordZ):
     formatZ = format(CoordZ)
     formatR = format(CoordR)
-    self.zCoordLbl['text'] = "Z-Coordinate:  " + formatZ
-    self.rCoordLbl['text'] = "R-Coordinate:  " + formatR
+    self.zCoordLbl['text'] = "Z-Coordinate:   " + formatZ
+    self.rCoordLbl['text'] = "R-Coordinate:   " + formatR
 
 
 def clickedMeanDia():
@@ -313,7 +312,6 @@ def clickedMeanDia():
 
 def clickedShowRadiusvsTime():
         showRadiusvsFrame()
-
 
 
 def posvsTime():
@@ -463,7 +461,7 @@ class objectDetection():
                     c = max(cnts, key=cv2.contourArea)
                     ((x, y), radius) = cv2.minEnclosingCircle(c)
                     M = cv2.moments(c)
-                    if int(M["m00"]) == 0:
+                    if (int(M["m00"]) != 0) and (radius < 65 and radius > 20):
                         center = np.nan
                         PixCoordX = np.nan
                         PixCoordY = np.nan
@@ -575,7 +573,7 @@ class objectDetection():
             try:
                 frameWidth = int(globFrameWidth)
             except:
-                frameWidth = 720
+                frameWidth = 1024
                 print("Default frame width: ", frameWidth)
 
             try:
@@ -611,7 +609,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (100, 90, 90)
+                blackUpper = (120, 90, 90)
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -635,6 +633,16 @@ class objectDetection():
             writer = None
             confdef = 0.2
             framenum = 0
+            deltaWidth = 128
+            deltaHeight = 128
+            width= 1024
+            height = 576
+            halfCamWidth = width/2 #x-offset for centering image coordinate system
+            halfCamHeight = height/2 #y-offset for centering image coordinate system
+            halfCamWidth = int(halfCamWidth)
+            halfCamHeight = int(halfCamHeight)
+            PixCoordX = 0
+            PixCoordY = 0
             fps = FPSOutput().start()
             coordArrayX = np.array([])
             coordArrayY = np.array([])
@@ -663,16 +671,28 @@ class objectDetection():
 
                 # resize the frame, blur it, and convert it to the HSV
                 # color space
-                frame = imutils.resize(frame, width=frameWidth)
+#                frame = imutils.resize(frame, width=frameWidth)
                 frameCropped = imutils.resize(frame, width=frameWidth)
 
-                height, width, channels = frame.shape
-                deltaX = width/2 #x-offset for centering image coordinate system
-                deltaY = height/2 #y-offset for centering image coordinate system
+#                if frame is not None:
+#                    frameCropped[0:576,0:(400+(int(PixCoordX))),:] = 255 #left side bar
+#                    frameCropped[188:400,(700+int(PixCoordX)):1024,:] = 255 #right side bar
+#                    frameCropped[0:250-int(PixCoordY),0:1024,:] = 255 #upper cross bar
+#                    frameCropped[326-int(PixCoordY):576,0:1024,:] = 255 #lower cross bar
+#                else:
+#                    frameCropped[0:576,0:400,:] = 255 #left side bar
+#                    frameCropped[188:400,700:1024,:] = 255 #right side bar
+#                    frameCropped[0:200,0:1024,:] = 255 #upper cross bar
+#                    frameCropped[376:576,0:1024,:] = 255 #lower cross bar
+
+                frameCropped1 = frameCropped[halfCamHeight-int(deltaHeight):halfCamHeight+int(deltaHeight),halfCamWidth-int(deltaWidth):halfCamWidth+int(deltaWidth),:]
+#                height, width, channels = frame.shape
+#                deltaX = width/2 #x-offset for centering image coordinate system
+#                deltaY = height/2 #y-offset for centering image coordinate system
 
 #                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 #                edged = cv2.Canny(gray,50,100)
-                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+                blurred = cv2.GaussianBlur(frameCropped1, (11, 11), 0)
 #                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
                 hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
     #            grayscale = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
@@ -709,29 +729,32 @@ class objectDetection():
                     c = max(cnts, key=cv2.contourArea)
                     ((x, y), radius) = cv2.minEnclosingCircle(c)
                     M = cv2.moments(c)
-                    if int(M["m00"]) == 0:
+                    if (int(M["m00"]) != 0) and (radius < 150 and radius > 20):
+                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+                        print("Center[0]",center[0])
+                        print("Center[1]",center[1])
+                        PixCoordX = (center[0]-deltaWidth)
+                        PixCoordY = (center[1]-deltaHeight)*(-1)
+                        radius = radius
+                        pixDiameter = 2*radius
+
+                    else:
                         center = np.nan
                         PixCoordX = np.nan
                         PixCoordY = np.nan
                         radius = np.nan
-                    else:
-                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-                        PixCoordX = (center[0]-deltaX)
-                        PixCoordY = (center[1]-deltaY)*(-1)
-                        radius = radius
-                        pixDiameter = 2*radius
                     print("PiX coordinate: {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
 
 
 
                     # only proceed if the radius meets a minimum size
-                    if (radius > 10 and radius < 60):
+                    if (radius > 20 and radius < 150):
 #                    if (radius > 0):
 
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
-                        cv2.circle(frame, (int(x), int(y)), int(radius), (15, 186, 2), 10)
-                        cv2.circle(frame, center, 5, (0, 0, 255), -1)
+                        cv2.circle(frameCropped1, (center[0], center[1]), int(radius), (15, 186, 2), 10)
+                        cv2.circle(frameCropped1, center, 5, (0, 0, 255), -1)
 
 
 #                    elif radius < 20:
@@ -742,8 +765,8 @@ class objectDetection():
                         PixRadius = radius
                     except:
                         print("No radius detected")
-                        PixCoordX = np.nan
-                        PixCoordX = np.nan
+                        PixRadius = np.nan
+                        PixRadius = np.nan
                 else:
                     PixCoordX = np.nan
                     PixCoordY = np.nan
@@ -761,24 +784,30 @@ class objectDetection():
                         continue
 
                     # show mask images
-                cv2.imshow('HSV', mask1)
-                cv2.imshow('Erode', mask2)
-                cv2.imshow('Dilate', mask3)
-                cv2.imshow("Median Filter", mask4)
+#                cv2.imshow('HSV', mask1)
+#                cv2.imshow('Erode', mask2)
+#                cv2.imshow('Dilate', mask3)
+#                cv2.imshow("Median Filter", mask4)
                 if reticleIncl == 1:
-                    height, width, channels = frame.shape
-                    frame = frame.copy()
-                    cv2.circle(frame, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
-                    cv2.line(frame, (int(width/2-100), int(height/2)), (int(width/2+100), int(height/2)),(255, 0, 255), 4) #x1,y1,x2,y2
-                    cv2.line(frame, (int(width/2), int(height/2-100)), (int(width/2), int(height/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
-
+#                    height, width, channels = frame.shape
+#                    frame = frame.copy()
+#                    cv2.circle(frameCropped, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
+#                    cv2.line(frameCropped, (int(width/2-100), int(height/2)), (int(width/2+100), int(height/2)),(255, 0, 255), 4) #x1,y1,x2,y2
+#                    cv2.line(frameCropped, (int(width/2), int(height/2-100)), (int(width/2), int(height/2+100)),(255, 0, 255), 4) #x1,y1,x2,y2
+                    cv2.circle(frameCropped1, (int(deltaWidth), int(deltaHeight)), 10, (255, 0, 0), -1)
+                    cv2.line(frameCropped1, (int(deltaWidth-50), int(deltaHeight)), (int(deltaWidth+50), int(deltaHeight)),(255, 0, 255), 4) #x1,y1,x2,y2
+                    cv2.line(frameCropped1, (int(deltaWidth), int(deltaHeight-50)), (int(deltaWidth), int(deltaHeight+50)),(255, 0, 255), 4) #x1,y1,x2,y2
                 # show the frame to our screen
 #                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-                cv2.imshow("Frame", frame)
-                key = cv2.waitKey(1) & 0xFF
+                if framenum % 3 == 0:
+                    cv2.imshow("Frame", frameCropped1)
+                    key = cv2.waitKey(1) & 0xFF
 
                 if PIDIncl == 1:
                     pid = readConfigPID()
+                    PID.PID.setKp(self, 3.1)
+                    PID.PID.setKi(self, 89.7)
+                    PID.PID.setKd(self, 0.025)
                     pid.update(PixCoordY)
                     pidOutputVal = float(pid.output)
                     print("PID output",pid.output)
@@ -809,7 +838,7 @@ class objectDetection():
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos >= 0 and PIDIncl == 0):
+                elif (objZPos < 0 and PIDIncl == 0):
                     byte1 = dataByte1[int(720 + objZPos)]
                     byte2 = dataByte2[int(720 + objZPos)]
                     byte3 = dataByte3[int(720 + objZPos)]
@@ -818,9 +847,9 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
 
-#                #open-loop control adjusted via the user interface
+#                #closed-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/200)
+                    objZPosCL = (pidOutputVal/1000)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
                     byte3 = dataByte3[int(719 + objZPosCL)]
@@ -829,10 +858,10 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/200)
-                    byte1 = dataByte1[int(objZPosCL)]
-                    byte2 = dataByte2[int(objZPosCL)]
-                    byte3 = dataByte3[int(objZPosCL)]
+                    objZPosCL = (pidOutputVal/1000)
+                    byte1 = dataByte1[int(objZPosCL+objZPos)]
+                    byte2 = dataByte2[int(objZPosCL+objZPos)]
+                    byte3 = dataByte3[int(objZPosCL+objZPos)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)

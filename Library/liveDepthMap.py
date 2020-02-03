@@ -39,7 +39,7 @@ SPWS = 100
 # Camera settimgs
 cam_width = 360
 cam_height = 240
-framewidth = 360
+framewidth = 1024rrrrrr
 
 # Final image capture settings
 scale_ratio = 1.0
@@ -142,7 +142,7 @@ while True:
     frame2 = frame2[1] if args.get("video", False) else frame2
     frame2 = imutils.resize(frame2, width=framewidth)
 #    cv2.imshow("pair2", frame2)
-    frame2 = frame2[0:200,100:300,:]
+#    frame2 = frame2[0:200,100:300,:]
     t1 = datetime.now()
     pair_img1 = cv2.cvtColor (frame1, cv2.COLOR_BGR2GRAY)
     pair_img2 = cv2.cvtColor (frame2, cv2.COLOR_BGR2GRAY)
