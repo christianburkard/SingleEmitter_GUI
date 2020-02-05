@@ -297,7 +297,7 @@ def showRadiusvsFrame():
 
     timeinit = data[1,0]
     timeArray = (data[:, 0] - data[0,0])
-
+    fig = plt.figure('Radius vs. Frame Number')
     plt.subplot(2,1,1)
     plt.plot(frameinit,radiusdistr , '-ok', color = 'black')
     plt.title("Radius Distribution")
@@ -376,7 +376,7 @@ def showPosvsTime():
     xReal = (data[:-1,2])*(-1)
     xReal = xReal/meandRad
 
-
+    fig = plt.figure('Position vs. Time')
     plt.subplot(4, 1, 1)
     plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
     plt.title('Position vs time')
@@ -423,6 +423,7 @@ def showOrbit():
         data = np.array(data).astype(float)
 
     # Plot the data
+    fig = plt.figure('2D - Orbit')
     plt.plot(data[:, 2], data[:, 1], '-ok', color = 'black')
     plt.title("Orbital Pixel Positions Open-Loop")
     plt.axis('equal')
@@ -525,7 +526,7 @@ def showPIDPlot():
     time = data[:,0]
     zPos = data[:-1,1]
     pidOutput = data[:-1,2]
-
+    fig = plt.figure('PID Output')
     plt.subplot(2, 1, 1)
     plt.plot(tottime, zPos, 'k', color = 'black')
 #    plt.title('Position vs time. Sampling frequency: ',freqSamp)

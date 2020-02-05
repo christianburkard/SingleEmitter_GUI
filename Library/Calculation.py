@@ -33,10 +33,10 @@ import numpy as np
 # initialization
 global meanPartDia
 global meanPartDiamm
-radius = 10
+radius = 2
 framenum = 0 # number of frames taken to estimate mean particle diameter
 framemax = 1000
-realParticleDiameter = 20
+realParticleDiameter = 2
 
 #pathWriteDia = 'H:/03_Software/Python/GUI/Logging/MeanParticleDiameter.csv'
 

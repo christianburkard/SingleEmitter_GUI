@@ -106,6 +106,11 @@ def setObjPos(spinBoxVal):
     globObjPos = int(spinBoxVal)
     return globObjPos
 
+def setObjDiamm(self, objDia):
+    print("Object diameter changed manually to: ",objDia)
+    self.globObjDia
+    self.globObjDia = int(self.objDia)
+    return self.globObjPos
 
 def safeSetPoint(self):
     print(self.spinBoxZ.get())
@@ -391,6 +396,18 @@ class objectDetection():
             except:
                 blackUpper = (100, 90, 90)
                 print("Set HSV default values ")
+
+
+            try:
+                tempObjDiaReal = setObjDiamm()
+            except:
+                tempObjDiaReal = 2.1 #mm
+            try:
+                tempObjDiaPx = setObjDiapx()
+            except:
+                tempObjDiaPx = 40 #px
+
+
 #            blackUpper = (50, 50, 100)
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -581,6 +598,15 @@ class objectDetection():
             except:
                 objDia = 2 #in mm
                 print("Default object diameter: ", objDia)
+
+            try:
+                tempObjDiaReal = setObjDiamm()
+            except:
+                tempObjDiaReal = 2.1 #mm
+            try:
+                tempObjDiaPx = setObjDiapx()
+            except:
+                tempObjDiaPx = 40 #px
 
             P = 0.5
             I = 1.5
@@ -805,9 +831,12 @@ class objectDetection():
 
                 if PIDIncl == 1:
                     pid = readConfigPID()
-                    PID.PID.setKp(self, 3.1)
-                    PID.PID.setKi(self, 89.7)
-                    PID.PID.setKd(self, 0.025)
+                    pid.SetPoint = float(spinBoxVal)
+                    pid.setSampleTime(0.0001)
+                    pid.setKp(3.1) #default: 3.1
+                    pid.setKi(120) #default: 89.7
+                    pid.setKd(0.025) #default: 0.025
+#                    pid.update(PixCoordY)
                     pid.update(PixCoordY)
                     pidOutputVal = float(pid.output)
                     print("PID output",pid.output)
@@ -849,7 +878,7 @@ class objectDetection():
 
 #                #closed-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/1000)
+                    objZPosCL = (pidOutputVal/10)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
                     byte3 = dataByte3[int(719 + objZPosCL)]
@@ -858,13 +887,14 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/1000)
+                    objZPosCL = (pidOutputVal/10)
                     byte1 = dataByte1[int(objZPosCL+objZPos)]
                     byte2 = dataByte2[int(objZPosCL+objZPos)]
                     byte3 = dataByte3[int(objZPosCL+objZPos)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
+
 
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
@@ -873,9 +903,9 @@ class objectDetection():
                 except:
                     None
                 pidOutputArray = np.append(pidOutputArray,pidOutputVal)
-                coordArrayX = np.append(coordArrayX,abs(PixCoordX))
-                coordArrayY = np.append(coordArrayY,abs(PixCoordY))
-                radiusArray = np.append(radiusArray,abs(PixRadius))
+                coordArrayX = np.append(coordArrayX,(PixCoordX))
+                coordArrayY = np.append(coordArrayY,(PixCoordY))
+                radiusArray = np.append(radiusArray,(PixRadius))
                 timeArray = np.append(timeArray,time.time()) # time in seconds
                 # update counter
                 framenum = framenum + 1
@@ -884,7 +914,12 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-                printCoordsGui(self, PixCoordX, PixCoordY)
+#                realCoordZ = PixCoordY*(tempObjDiaReal/tempObjDiaPx)
+                try:
+                    realCoordZ = int((PixCoordY*(tempObjDiaReal/tempObjDiaPx))*20)
+                    printCoordsGui(self, PixCoordX, realCoordZ)
+                except:
+                    None
                 window.update()
 
 #                time.sleep(0.5)
@@ -1866,7 +1901,7 @@ class GUI():
 #        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
         self.master.title("TinyLev")
-        self.master.geometry("900x650+1000+600")
+        self.master.geometry("1000x750+1000+600")
 #        self.master.configure(background ='Gray'
 
 #        selected = tk.IntVar()
@@ -1961,26 +1996,35 @@ class GUI():
         self.b13 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
         self.b13.grid(column=8,row=15,sticky = tk.W)
 
-        self.setPntFrame = tk.Label(self.master, text="Define object diameter: ")
+        self.setPntFrame = tk.Label(self.master, text="Define object diameter/ mm: ")
         self.setPntFrame.grid(column=2,row=16,sticky = tk.W+tk.E)
 
-        self.spinBoxObjDia = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printObjDia)
-        self.spinBoxObjDia.grid(column=7, row= 16,sticky = tk.W+tk.E)
+        self.spinBoxObjDiamm = tk.Spinbox(self.master, from_ =1, to=1024, command = self.setObjDiamm)
+        self.spinBoxObjDiamm.grid(column=7, row= 16,sticky = tk.W+tk.E)
 
-        self.b14 = Button(self.master, text="Set diameter ", command = self.setObjDia)
+        self.b14 = Button(self.master, text="Set diameter ", command = self.setObjDiamm)
         self.b14.grid(column=8,row=16,sticky = tk.W)
+
+        self.setPntObjDia = tk.Label(self.master, text="Define object diameter/ px: ")
+        self.setPntObjDia.grid(column=2,row=17,sticky = tk.W+tk.E)
+
+        self.spinBoxObjDiaPx = tk.Spinbox(self.master, from_ =0.1, to=200, command = self.setObjDiapx)
+        self.spinBoxObjDiaPx.grid(column=7, row= 17,sticky = tk.W+tk.E)
+
+        self.b20 = Button(self.master, text="Set diameter ", command = self.setObjDiapx)
+        self.b20.grid(column=8,row=17,sticky = tk.W)
 
         self.b15 = Button(self.master, text="Plot PID ", command = self.setPIDPlot)
         self.b15.grid(column=7,row=8,sticky = tk.W+tk.E,columnspan =1)
 
         self.setPosFrame = tk.Label(self.master, text="Define object position: ")
-        self.setPosFrame.grid(column=2,row=17,sticky = tk.W+tk.E)
+        self.setPosFrame.grid(column=2,row=18,sticky = tk.W+tk.E)
 
         self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTemp)
-        self.spinBoxObjPos.grid(column=7, row= 17,sticky = tk.W+tk.E)
+        self.spinBoxObjPos.grid(column=7, row= 18,sticky = tk.W+tk.E)
 
         self.b16 = Button(self.master, text="Set position ", command = self.setObjPosTemp)
-        self.b16.grid(column=8,row=17,sticky = tk.W)
+        self.b16.grid(column=8,row=18,sticky = tk.W)
 
         self.b17 = Button(self.master, text = "Connect FPGA", command = connectFPGACL)
         self.b17.grid(column= 7, row = 4, sticky = tk.W+tk.E)
@@ -2022,20 +2066,23 @@ class GUI():
         print("Object position: ", self.spinBoxObjPos.get())
 
 
-    def printObjDia(self):
-        print("Frame width: ", self.spinBoxObjDia.get())
-
-
     def setObjPosTemp(self):
         global spinBoxVal
         spinBoxVal = self.spinBoxObjPos.get()
         setObjPos(spinBoxVal)
 
 
-    def setObjDia(self):
-        print("Object diameter changed manually to: ",self.spinBoxObjDia.get())
+    def setObjDiamm(self):
+        print("Object diameter changed manually to: ",self.spinBoxObjDiamm.get())
+        global globObjDiamm
+        globObjDiamm = int(self.spinBoxObjDiamm.get())
+        return globObjDiamm
+
+
+    def setObjDiapx(self):
+        print("Object diameter changed manually to: ",self.spinBoxObjDiaPx.get())
         global globFrameWidth
-        globObjDia = int(self.spinBoxObjDia.get())
+        globObjDia = int(self.spinBoxObjDiaPx.get())
         return globObjDia
 
 
