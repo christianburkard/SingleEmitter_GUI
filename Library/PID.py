@@ -36,7 +36,6 @@ class PID:
 
     def clear(self):
         self.SetPoint = 0.0
-
         self.PTerm = 0.0
         self.ITerm = 0.0
         self.DTerm = 0.0
@@ -45,7 +44,6 @@ class PID:
         # Windup Guard
         self.intError = 0.0
         self.windupGuard = 20.0
-
         self.output = 0.0
 
     #calculates PID value for given reference feedback

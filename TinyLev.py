@@ -832,9 +832,9 @@ class objectDetection():
                 if PIDIncl == 1:
                     pid = readConfigPID()
                     pid.SetPoint = float(spinBoxVal)
-                    pid.setSampleTime(0.0001)
-                    pid.setKp(3.1) #default: 3.1
-                    pid.setKi(120) #default: 89.7
+                    pid.setSampleTime(0.001)
+                    pid.setKp(1.1) #default: 3.1
+                    pid.setKi(250) #default: 89.7
                     pid.setKd(0.025) #default: 0.025
 #                    pid.update(PixCoordY)
                     pid.update(PixCoordY)
@@ -878,7 +878,7 @@ class objectDetection():
 
 #                #closed-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/10)
+                    objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
                     byte3 = dataByte3[int(719 + objZPosCL)]
@@ -887,7 +887,7 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/10)
+                    objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(objZPosCL+objZPos)]
                     byte2 = dataByte2[int(objZPosCL+objZPos)]
                     byte3 = dataByte3[int(objZPosCL+objZPos)]
