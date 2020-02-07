@@ -100,11 +100,11 @@ valueVdef = 90
 #window = tk.Tk()
 
 
-def setObjPos(spinBoxVal):
+def setObjPos(self,spinBoxVal):
     print("Object position changed manually to: ",spinBoxVal)
-    global globObjPos
-    globObjPos = int(spinBoxVal)
-    return globObjPos
+    self.globObjPos
+    self.globObjPos = int(spinBoxVal)
+    return self.globObjPos
 
 def setObjDiamm(self, objDia):
     print("Object diameter changed manually to: ",objDia)
