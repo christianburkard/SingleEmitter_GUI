@@ -261,6 +261,24 @@ def writePixelPositionPCCam2(timeArray,coordArrayX,coordArrayY,radiusArray,frame
     time.sleep(0.2)
     print("Data written")
 
+def writePixelPosition3D(timeArray,xTri,yTri,zTri,radiusArray0,framenum,fpsVar,PIDIncl):
+    time.sleep(0.2)
+    print("Writing data to file ..")
+#    coordArray = np.array([])
+    #coordArray = np.concatenate((coordArrayX, coordArrayY))
+    data = {'Time' : timeArray,'X Coord' : xTri, 'Y Coord' : yTri, 'Z Coord' : zTri, 'Radius' : radiusArray0, 'Framenumber' : framenum, 'FPS' : fpsVar}
+#    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
+    df1 = pd.DataFrame(data)
+    df1.replace('',np.nan, inplace = True)
+    timeActual = time.strftime("%d%m%y-%H%M%S")
+    if PIDIncl == 0:
+        df1.to_csv("./Logging/OrbitCoordinates_3D_OpenLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    elif PIDIncl == 1:
+        df1.to_csv("./Logging/OrbitCoordinates_3D_ClosedLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
+    #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
+    time.sleep(0.2)
+    print("Data written")
+
 
 def writePIDOutput(timeArray,coordArrayY,pidOutputArray):
     time.sleep(0.2)
