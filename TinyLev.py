@@ -42,6 +42,7 @@ import sys
 import random
 import serial
 import pandas as pd
+import math
 #from picamera.array import PiRGBArray
 #from picamera import PiCamera
 import tkinter as tk
@@ -103,6 +104,10 @@ valueVdef = 90
 def setObjPos(self,spinBoxVal):
     print("Object position changed manually to: ",spinBoxVal)
     self.globObjPos
+
+
+def setObjPos(self, spinBoxVal):
+    print("Object position changed manually to: ",spinBoxVal)
     self.globObjPos = int(spinBoxVal)
     return self.globObjPos
 
@@ -116,7 +121,7 @@ def safeSetPoint(self):
     print(self.spinBoxZ.get())
 
 
-def clickedBack():
+def clickedBack(self):
     self.destroy()
 
 def connectFPGA():
@@ -304,8 +309,8 @@ def showEMPDFile():
     Calculation.meanParticleSize(filepath)
 
 def printCoordsGui(self, CoordR, CoordZ):
-    formatZ = format(CoordZ)
-    formatR = format(CoordR)
+    formatZ = ("{0:.1f}".format(CoordZ))
+    formatR = ("{0:.1f}".format(CoordR))
     self.zCoordLbl['text'] = "Z-Coordinate:   " + formatZ
     self.rCoordLbl['text'] = "R-Coordinate:   " + formatR
 
@@ -339,6 +344,7 @@ def exitCalc():
 
 def closeAll():
     print("Exiting ...")
+    window.update()
     window.protocol()
     window.destroy()
 
@@ -608,6 +614,9 @@ class objectDetection():
             except:
                 tempObjDiaPx = 40 #px
 
+            #Cameras positioning
+            alphaCam = 18.4
+            updateRatePos = 25
             P = 0.5
             I = 1.5
             D = 0.3
@@ -635,7 +644,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (120, 90, 90)
+                blackUpper = (150, 120, 120)
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -759,11 +768,13 @@ class objectDetection():
                         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                         print("Center[0]",center[0])
                         print("Center[1]",center[1])
-                        PixCoordX = (center[0]-deltaWidth)
+#                        PixCoordX1 = (center[0]-deltaWidth)
+                        PixCoordX = (center[0]-deltaWidth)*math.cos(alphaCam)
                         PixCoordY = (center[1]-deltaHeight)*(-1)
                         radius = radius
                         pixDiameter = 2*radius
-
+#                        print("X",PixCoordX1)
+#                        print("X-Cos",PixCoordX)
                     else:
                         center = np.nan
                         PixCoordX = np.nan
@@ -834,7 +845,7 @@ class objectDetection():
                     pid.SetPoint = float(spinBoxVal)
                     pid.setSampleTime(0.001)
                     pid.setKp(1.1) #default: 3.1
-                    pid.setKi(250) #default: 89.7
+                    pid.setKi(100) #default: 89.7
                     pid.setKd(0.025) #default: 0.025
 #                    pid.update(PixCoordY)
                     pid.update(PixCoordY)
@@ -858,7 +869,7 @@ class objectDetection():
 #                    spinBoxVal = 0 #in mm
 
                 #open-loop control adjusted via the user interface
-                objZPos = setObjPos(spinBoxVal)
+                objZPos = setObjPos(self, spinBoxVal)
                 print("Obj Z position value: ",objZPos)
                 if (objZPos >= 0 and PIDIncl == 0):
                     byte1 = dataByte1[int(objZPos)]
@@ -916,8 +927,11 @@ class objectDetection():
 #                print("Time array: ",len(timeArray))
 #                realCoordZ = PixCoordY*(tempObjDiaReal/tempObjDiaPx)
                 try:
-                    realCoordZ = int((PixCoordY*(tempObjDiaReal/tempObjDiaPx))*20)
-                    printCoordsGui(self, PixCoordX, realCoordZ)
+                    if framenum % updateRatePos == 0:
+                        realCoordZ = int((PixCoordY*(tempObjDiaReal/tempObjDiaPx))*20)
+                        printCoordsGui(self, PixCoordX, realCoordZ)
+                    else:
+                        None
                 except:
                     None
                 window.update()
@@ -1439,7 +1453,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (120, 90, 90)
+                blackUpper = (150, 120, 120) #default: 120, 90, 90
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -1521,28 +1535,28 @@ class objectDetection():
 #                frameCropped1 = imutils.resize(frame1, width= frameWidth)
 #                halfCamWidth = int(cam_width/2)
 #                halfCamHeight = int(cam_height/2)
-                try:
-                    frameCropped0[0:576,0:(480+(int(PixCoordX0))),:] = 255 #left side bar
-                    frameCropped0[188:400,(544+int(PixCoordX0)):1024,:] = 255 #right side bar
-                    frameCropped0[0:250-int(PixCoordY0),0:1024,:] = 255 #upper cross bar
-                    frameCropped0[326-int(PixCoordY0):576,0:1024,:] = 255 #lower cross bar
-                except:
-                    frameCropped0[0:576,0:480,:] = 255 #left side bar
-                    frameCropped0[188:400,544:1024,:] = 255 #right side bar
-                    frameCropped0[0:250,0:1024,:] = 255 #upper cross bar
-                    frameCropped0[326:576,0:1024,:] = 255 #lower cross bar
+#                try:
+#                    frameCropped0[0:576,0:(450+(int(PixCoordX0))),:] = 255 #left side bar
+#                    frameCropped0[188:400,(620+int(PixCoordX0)):1024,:] = 255 #right side bar
+#                    frameCropped0[0:220-int(PixCoordY0),0:1024,:] = 255 #upper cross bar
+#                    frameCropped0[326-int(PixCoordY0):576,0:1024,:] = 255 #lower cross bar
+#                except:
+#                    frameCropped0[0:576,0:450,:] = 255 #left side bar
+#                    frameCropped0[188:400,620:1024,:] = 255 #right side bar
+#                    frameCropped0[0:220,0:1024,:] = 255 #upper cross bar
+#                    frameCropped0[326:576,0:1024,:] = 255 #lower cross bar
 
 
-                try:
-                    frameCropped1[0:576,0:(480+(int(PixCoordX1))),:] = 255 #left side bar
-                    frameCropped1[188:400,(544+int(PixCoordX1)):1024,:] = 255 #right side bar
-                    frameCropped1[0:250-int(PixCoordY1),0:1024,:] = 255 #upper cross bar
-                    frameCropped1[326-int(PixCoordY1):576,0:1024,:] = 255 #lower cross bar
-                except:
-                    frameCropped1[0:576,0:480,:] = 255 #left side bar
-                    frameCropped1[188:400,544:1024,:] = 255 #right side bar
-                    frameCropped1[0:250,0:1024,:] = 255 #upper cross bar
-                    frameCropped1[326:576,0:1024,:] = 255 #lower cross bar
+#                try:
+#                    frameCropped1[0:576,0:(450+(int(PixCoordX1))),:] = 255 #left side bar
+#                    frameCropped1[188:400,(620+int(PixCoordX1)):1024,:] = 255 #right side bar
+#                    frameCropped1[0:220-int(PixCoordY1),0:1024,:] = 255 #upper cross bar
+#                    frameCropped1[326-int(PixCoordY1):576,0:1024,:] = 255 #lower cross bar
+#                except:
+#                    frameCropped1[0:576,0:450,:] = 255 #left side bar
+#                    frameCropped1[188:400,620:1024,:] = 255 #right side bar
+#                    frameCropped1[0:220,0:1024,:] = 255 #upper cross bar
+#                    frameCropped1[326:576,0:1024,:] = 255 #lower cross bar
 
                 frameCropped10 = frameCropped1[halfCamHeight1-int(deltaHeight1):halfCamHeight1+int(deltaHeight1),halfCamWidth1-int(deltaWidth1):halfCamWidth1+int(deltaWidth1),:]
                 frameCropped00 = frameCropped0[halfCamHeight0-int(deltaHeight0):halfCamHeight0+int(deltaHeight0),halfCamWidth0-int(deltaWidth0):halfCamWidth0+int(deltaWidth0),:]
@@ -1555,7 +1569,9 @@ class objectDetection():
 #                edged = cv2.Canny(gray,50,100)
                 blurred0 = cv2.GaussianBlur(frameCropped00, (11, 11), 0)
                 blurred1 = cv2.GaussianBlur(frameCropped10, (11, 11), 0)
-                hsv0 = cv2.cvtColor(blurred0, cv2.COLOR_BGR2HSV)
+#                hsv0 = cv2.cvtColor(blurred0, cv2.COLOR_BGR2HSV)
+#                hsv1 = cv2.cvtColor(blurred1, cv2.COLOR_BGR2HSV)
+
     #            grayscale = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
     #
                 # construct a mask for the color "black", then perform
@@ -1599,7 +1615,7 @@ class objectDetection():
                     ((x0, y0), radius0) = cv2.minEnclosingCircle(c0)
                     print("X0",x0)
                     M0 = cv2.moments(c0)
-                    if (int(M0["m00"]) != 0) and (radius0 < 65 and radius0 > 20):
+                    if (int(M0["m00"]) != 0) and (radius0 < 150 and radius0 > 20):
                         center0 = (int(M0["m10"] / M0["m00"]), int(M0["m01"] / M0["m00"]))
 #                        center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
                         print("Center0[0]",center0[0])
@@ -1615,7 +1631,7 @@ class objectDetection():
                         PixCoordY0 = np.nan
                         radius0 = np.nan
                     # only proceed if the radius meets a minimum size
-                    if (radius0 > 20 and radius0 < 65):
+                    if (radius0 > 20 and radius0 < 150):
 #                    if (radius0 > 0):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
@@ -1669,7 +1685,7 @@ class objectDetection():
                     ((x1, y1), radius1) = cv2.minEnclosingCircle(c1)
 
                     M1 = cv2.moments(c1)
-                    if (int(M1["m00"]) != 0) and (radius1 < 65 and radius1 > 20):
+                    if (int(M1["m00"]) != 0) and (radius1 < 150 and radius1 > 20):
                         center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
 #                        center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
                         print("Center0[0]",center1[0])
@@ -1691,7 +1707,7 @@ class objectDetection():
                         radius1 = np.nan
 #                        radius1 = np.nan
                     # only proceed if the radius meets a minimum size
-                    if (radius1 > 20 and radius1 < 100):
+                    if (radius1 > 20 and radius1 < 150):
 #                    if (radius > 0):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
@@ -1757,13 +1773,19 @@ class objectDetection():
 #                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 cv2.imshow("Cropped Frame 0", frameCropped00)
                 cv2.imshow("Cropped Frame 1", frameCropped10)
-#                cv2.imshow("Frame0", frameCropped0)
-#                cv2.imshow("Frame1", frameCropped1)
+                cv2.imshow("Mask30", mask30)
+                cv2.imshow("Mask31", mask31)
                 key = cv2.waitKey(1) & 0xFF
 
                 if PIDIncl == 1:
                     pid = readConfigPID()
-                    pid.update(PixCoordY0)
+                    pid.SetPoint = float(spinBoxVal)
+                    pid.setSampleTime(0.001)
+                    pid.setKp(1.1) #default: 3.1
+                    pid.setKi(100) #default: 89.7
+                    pid.setKd(0.025) #default: 0.025
+#                    pid.update(PixCoordY)
+                    pid.update(PixCoordY)
                     pidOutputVal = float(pid.output)
                     print("PID output",pid.output)
 
@@ -1784,7 +1806,7 @@ class objectDetection():
 #                    spinBoxVal = 0 #in mm
 
                 #open-loop control adjusted via the user interface
-                objZPos = setObjPos(spinBoxVal)
+                objZPos = setObjPos(self, spinBoxVal)
                 print("Obj Z position value: ",objZPos)
                 if (objZPos >= 0 and PIDIncl == 0):
                     byte1 = dataByte1[int(objZPos)]
@@ -1804,7 +1826,7 @@ class objectDetection():
 
 #                #open-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/200)
+                    objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
                     byte3 = dataByte3[int(719 + objZPosCL)]
@@ -1813,7 +1835,7 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/200)
+                    objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(objZPosCL)]
                     byte2 = dataByte2[int(objZPosCL)]
                     byte3 = dataByte3[int(objZPosCL)]
@@ -2069,7 +2091,7 @@ class GUI():
     def setObjPosTemp(self):
         global spinBoxVal
         spinBoxVal = self.spinBoxObjPos.get()
-        setObjPos(spinBoxVal)
+        setObjPos(self, spinBoxVal)
 
 
     def setObjDiamm(self):
