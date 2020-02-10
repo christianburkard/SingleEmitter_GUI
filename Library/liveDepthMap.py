@@ -39,7 +39,7 @@ SPWS = 100
 # Camera settimgs
 cam_width = 360
 cam_height = 240
-framewidth = 1024rrrrrr
+framewidth = 360
 
 # Final image capture settings
 scale_ratio = 1.0

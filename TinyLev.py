@@ -43,6 +43,7 @@ import random
 import serial
 import pandas as pd
 import math
+from PIL import Image
 #from picamera.array import PiRGBArray
 #from picamera import PiCamera
 import tkinter as tk
@@ -769,7 +770,7 @@ class objectDetection():
                         print("Center[0]",center[0])
                         print("Center[1]",center[1])
 #                        PixCoordX1 = (center[0]-deltaWidth)
-                        PixCoordX = (center[0]-deltaWidth)*math.cos(alphaCam)
+                        PixCoordX = (center[0]-deltaWidth)*math.cos(alphaCam*(2*math.pi/360))
                         PixCoordY = (center[1]-deltaHeight)*(-1)
                         radius = radius
                         pixDiameter = 2*radius
@@ -1006,7 +1007,8 @@ class objectDetection():
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
-
+            psiCam1 = -27.71 #degrees
+            psiCam2 = -psiCam1
 
             # allow the camera or video file to warm up
             time.sleep(0.2)
@@ -1054,6 +1056,16 @@ class objectDetection():
                 deltaX = width0/2 #x-offset for centering image coordinate system
                 deltaY = height0/2 #y-offset for centering image coordinate system
 
+#                frame0 = Image.open(frame0)
+#                frame0.rotate(psiCam1)
+#                mask40.rotate(psiCam2)
+
+
+                M0 = cv2.getRotationMatrix2D((width0/2,height0/2),psiCam1,1)
+                M1 = cv2.getRotationMatrix2D((width1/2,height1/2),psiCam2,1)
+                frame0 = cv2.warpAffine(frame0, M0, (width0,height0))
+                frame1 = cv2.warpAffine(frame1, M1, (width1,height1))
+
                 blurred0 = cv2.GaussianBlur(frame0, (11, 11), 0)
 #                blurred = cv2.GaussianBlur(frame, (11, 11), 0)
                 hsv = cv2.cvtColor(blurred0, cv2.COLOR_BGR2HSV)
@@ -1065,6 +1077,7 @@ class objectDetection():
                 #Apply median filter
                 mask30 = cv2.dilate(mask20, None, iterations=1)
                 mask40 = cv2.medianBlur(mask30,5)
+
 
                 # find contours in the mask and initialize the current
                 # (x, y) center of the object

@@ -24,9 +24,9 @@ def start3dCalibration():
     image_size = (img_width,img_height)
 
     # Chessboard parameters
-    rows = 6
-    columns = 9
-    square_size = 2.5
+    rows = 2 #default 6
+    columns = 3 #default 9
+    square_size = 7
 
 
     calibrator = StereoCalibrator(rows, columns, square_size, image_size)
