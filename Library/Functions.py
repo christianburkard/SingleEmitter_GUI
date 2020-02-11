@@ -23,6 +23,7 @@ from Library.Functions import *
 from Library.settings import *
 from Library import PID
 import os.path
+from mpl_toolkits import mplot3d
 
 
 def initPIDParams(posZ,P,I,D):
@@ -387,34 +388,48 @@ def showPosvsTime():
         dtime[i+1] = timeinit[i+1] - timeinit[i]
         tottime = np.append(dtime[i],tottime+dtime[i])
     meandRad = sum(2*data[:-1,3])/len(data[:,1])
-    zCalib = (data[:-1, 2])*(-1)
-    zReal = (data[:-1,1])
+    xCalib = (data[:-1, 1])*(-1)
+    zReal = (data[:-1,3])
     zReal = zReal/meandRad
 
-    xReal = (data[:-1,2])*(-1)
+    xReal = (data[:-1,1])*(-1)
     xReal = xReal/meandRad
 
+    yReal = (data[:-1,2])
+    yReal = yReal/meandRad
+
     fig = plt.figure('Position vs. Time')
-    plt.subplot(4, 1, 1)
-    plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
+    plt.subplot(6, 1, 1)
+    plt.plot(tottime, data[:-1, 3], '-ok', color = 'black')
     plt.title('Position vs time')
     plt.ylabel('Z-Coordinate / px')
 
 
-    plt.subplot(4, 1, 2)
+    plt.subplot(6, 1, 2)
     plt.plot(tottime, zReal, '-ok', color = 'black')
     plt.ylabel('Z-Coordinate / mm')
 
 
-    plt.subplot(4, 1, 3)
-    plt.plot(tottime, zCalib, '-ok', color = 'black')
+    plt.subplot(6, 1, 3)
+    plt.plot(tottime, xCalib, '-ok', color = 'black')
     plt.xlabel('Time t / s')
-    plt.ylabel('R-Coordinate / px')
+    plt.ylabel('X-Coordinate / px')
 
-    plt.subplot(4, 1, 4)
+    plt.subplot(6, 1, 4)
     plt.plot(tottime, xReal, '-ok', color = 'black')
     plt.xlabel('Time t / s')
-    plt.ylabel('R-Coordinate / mm')
+    plt.ylabel('X-Coordinate / mm')
+
+    if headers[2] == str('Y Coord'):
+        plt.subplot(6, 1, 5)
+        plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
+        plt.xlabel('Time t / s')
+        plt.ylabel('Y-Coordinate / px')
+
+        plt.subplot(6, 1, 6)
+        plt.plot(tottime, yReal, '-ok', color = 'black')
+        plt.xlabel('Time t / s')
+        plt.ylabel('Y-Coordinate / mm')
 
 #    # Plot the data
 #    plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
@@ -558,3 +573,33 @@ def showPIDPlot():
     locs, labels = plt.xticks()
 
     print("PID output plotting done")
+
+def show3DPlot():
+
+    print("Plotting 3D curve ...")
+    file = filedialog.askopenfilename(initialdir = './Logging')
+
+    with open(file, 'r') as f:
+        reader = csv.reader(f, delimiter=',')
+        # get header from first row
+        headers = next(reader)
+        # get all the rows as a list
+        data = list(reader)
+        # transform data into numpy array
+        data = np.array(data).astype(float)
+        framemax = len(data[:,1])
+
+
+    ax = plt.axes(projection='3d')
+
+    # Data for a three-dimensional line
+    zline = data[:,3]
+    xline = data[:,1]
+    yline = data[:,2]
+    ax.plot3D(xline, yline, zline, 'gray')
+
+    # Data for three-dimensional scattered points
+    zdata = data[:,3]
+    xdata = data[:,1]
+    ydata = data[:,2]
+    ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');

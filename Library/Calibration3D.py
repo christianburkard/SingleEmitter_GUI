@@ -58,15 +58,15 @@ def start3dCalibration():
 
     print ('Starting calibration... It can take several minutes!')
     calibration = calibrator.calibrate_cameras()
-    calibration.export('calibData')
+    calibration.export('calibData3D')
     print ('Calibration complete!')
 
 
     # Lets rectify and show last pair after  calibration
-    calibration = StereoCalibration(input_folder='calibData')
+    calibration = StereoCalibration(input_folder='calibData3D')
     rectified_pair = calibration.rectify((imgLeft, imgRight))
 
-    cv2.imshow('Left CALIBRATED', rectified_pair[0])
-    cv2.imshow('Right CALIBRATED', rectified_pair[1])
-    cv2.imwrite("rectifyed_left.jpg",rectified_pair[0])
-    cv2.imwrite("rectifyed_right.jpg",rectified_pair[1])
+    cv2.imshow('lower CALIBRATED', rectified_pair[0])
+    cv2.imshow('Upper CALIBRATED', rectified_pair[1])
+    cv2.imwrite("rectifyed_lower.jpg",rectified_pair[0])
+    cv2.imwrite("rectifyed_upper.jpg",rectified_pair[1])

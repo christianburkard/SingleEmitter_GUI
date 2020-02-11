@@ -325,9 +325,6 @@ def clickedShowRadiusvsTime():
         showRadiusvsFrame()
 
 
-def posvsTime():
-    showPosvsTime()
-
 
 def safeSetPoint():
     print(spinBoxSetPoint.get())
@@ -1345,15 +1342,32 @@ class objectDetection():
                     cv2.line(frameCropped10, (int(deltaWidth0-50), int(deltaHeight0)), (int(deltaWidth0+50), int(deltaHeight0)),(255, 0, 255), 4) #x1,y1,x2,y2
                     cv2.line(frameCropped10, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
 
-                f = 0.500
-                b = 38.27
-                phi = 35*(2*math.pi/360)
-                yTri = (b*f)/(PixCoordY1-PixCoordY0)
-                xTri = (PixCoordY1*yTri)/(f)
-                zTri = (PixCoordX1*yTri)/(f+math.tan(phi)*yTri)
+                #geometric properties
+                phi1 = 35*(2*math.pi/360)
+                phi2 = 35*(2*math.pi/360)
+                #transformation from local to global coordinate system
+                PixCoordX0 = PixCoordX0
+                PixCoordX1 = PixCoordX1
+                PixCoordZ0 = PixCoordY0*(math.cos(phi1))
+                PixCoordZ1 = PixCoordY1*(math.cos(phi2))
+                PixCoordY0 = PixCoordX1*(math.sin(phi1))
+                PixCoordY1 = PixCoordX1*(math.sin(phi1))
+                xTri = (PixCoordX0+PixCoordX1)/2
+                yTri = (PixCoordY0+PixCoordY1)/2
+                zTri = (PixCoordZ0+PixCoordZ1)/2
+
+#                f = 0.500
+#                b = 38.27
+#                phi = 35*(2*math.pi/360)
+#                yTri = (b*f)/(PixCoordY1-PixCoordY0)
+#                xTri = (PixCoordY1*yTri)/(f)
+#                zTri = (PixCoordX1*yTri)/(f+math.tan(phi)*yTri)
                 print("XTri",xTri)
                 print("YTri",yTri)
                 print("ZTri",zTri)
+
+
+
 
 
                 # show the frame to our screen
@@ -2055,7 +2069,7 @@ class GUI():
         self.b5 = Button(self.master, text = "Estimate Mean Patricle Diameter", command = clickedMeanDia)
         self.b5.grid(column= 8, row = 4,sticky = tk.W+tk.E, columnspan =1)
 
-        self.b6 = Button(self.master, text = "Position-Time", command = posvsTime)
+        self.b6 = Button(self.master, text = "Position-Time", command = self.posvsTime)
         self.b6.grid(column= 8, row = 5,sticky = tk.W+tk.E, columnspan =1)
 
         self.b7 = Button(self.master, text = "Z-Closed-Loop", command = self.newWinZCL)
@@ -2068,28 +2082,28 @@ class GUI():
         self.b9.grid(column= 8, row = 8,sticky = tk.W+tk.E, columnspan =1)
 
         self.setPnt = tk.Label(self.master, text="H-Value: ")
-        self.setPnt.grid(column=2,row=10,sticky = tk.W+tk.E)
-
-        self.spinBoxH = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueH)
-        self.spinBoxH.grid(column=7, row= 10,sticky = tk.W+tk.E)
-
-        self.setPnt = tk.Label(self.master, text="S-Value: ")
         self.setPnt.grid(column=2,row=11,sticky = tk.W+tk.E)
 
-        self.spinBoxS = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueS)
-        self.spinBoxS.grid(column=7, row= 11,sticky = tk.W+tk.E)
+        self.spinBoxH = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueH)
+        self.spinBoxH.grid(column=7, row= 11,sticky = tk.W+tk.E)
 
-        self.setPnt = tk.Label(self.master, text="V-Value: ")
+        self.setPnt = tk.Label(self.master, text="S-Value: ")
         self.setPnt.grid(column=2,row=12,sticky = tk.W+tk.E)
 
+        self.spinBoxS = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueS)
+        self.spinBoxS.grid(column=7, row= 12,sticky = tk.W+tk.E)
+
+        self.setPnt = tk.Label(self.master, text="V-Value: ")
+        self.setPnt.grid(column=2,row=13,sticky = tk.W+tk.E)
+
         self.spinBoxV = tk.Spinbox(self.master, from_ =0, to=255, command = self.printValueV)
-        self.spinBoxV.grid(column=7, row= 12,sticky = tk.W+tk.E)
+        self.spinBoxV.grid(column=7, row= 13,sticky = tk.W+tk.E)
 
         self.b10 = Button(self.master, text="Set Values ", command = self.setAllValuesHSV)
-        self.b10.grid(column=8,row=11,sticky = tk.W)
+        self.b10.grid(column=8,row=12,sticky = tk.W)
 
         self.b11 = Button(self.master, text="Default ", command = self.setHSVDef)
-        self.b11.grid(column=8,row=12,sticky = tk.W)
+        self.b11.grid(column=8,row=13,sticky = tk.W)
 
         self.b12 = Button(self.master, text="Exit ", command = closeAll)
         self.b12.grid(column=8,row=9,sticky = tk.W+tk.E,columnspan =1)
@@ -2099,49 +2113,49 @@ class GUI():
         self.RetBox.grid(column=1,row=8,sticky = tk.W,columnspan =1)
 
         self.rCoordLbl = tk.Label(self.master, text="R-Coordinate: --:--")
-        self.rCoordLbl.grid(column=2,row=13,sticky = tk.W+tk.E)
+        self.rCoordLbl.grid(column=2,row=14,sticky = tk.W+tk.E)
 
         self.zCoordLbl = tk.Label(self.master, text="Z-Coordinate: --:--")
-        self.zCoordLbl.grid(column=2,row=14,sticky = tk.W+tk.E)
+        self.zCoordLbl.grid(column=2,row=15,sticky = tk.W+tk.E)
 
         self.setPntFrame = tk.Label(self.master, text="Define frame width: ")
         self.setPntFrame.grid(column=2,row=15,sticky = tk.W+tk.E)
 
         self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
-        self.spinBoxWidth.grid(column=7, row= 15,sticky = tk.W+tk.E)
+        self.spinBoxWidth.grid(column=7, row= 16,sticky = tk.W+tk.E)
 
         self.b13 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
-        self.b13.grid(column=8,row=15,sticky = tk.W)
+        self.b13.grid(column=8,row=16,sticky = tk.W)
 
         self.setPntFrame = tk.Label(self.master, text="Define object diameter/ mm: ")
-        self.setPntFrame.grid(column=2,row=16,sticky = tk.W+tk.E)
+        self.setPntFrame.grid(column=2,row=17,sticky = tk.W+tk.E)
 
         self.spinBoxObjDiamm = tk.Spinbox(self.master, from_ =1, to=1024, command = self.setObjDiamm)
-        self.spinBoxObjDiamm.grid(column=7, row= 16,sticky = tk.W+tk.E)
+        self.spinBoxObjDiamm.grid(column=7, row= 17,sticky = tk.W+tk.E)
 
         self.b14 = Button(self.master, text="Set diameter ", command = self.setObjDiamm)
-        self.b14.grid(column=8,row=16,sticky = tk.W)
+        self.b14.grid(column=8,row=17,sticky = tk.W)
 
         self.setPntObjDia = tk.Label(self.master, text="Define object diameter/ px: ")
-        self.setPntObjDia.grid(column=2,row=17,sticky = tk.W+tk.E)
+        self.setPntObjDia.grid(column=2,row=18,sticky = tk.W+tk.E)
 
         self.spinBoxObjDiaPx = tk.Spinbox(self.master, from_ =0.1, to=200, command = self.setObjDiapx)
-        self.spinBoxObjDiaPx.grid(column=7, row= 17,sticky = tk.W+tk.E)
+        self.spinBoxObjDiaPx.grid(column=7, row= 18,sticky = tk.W+tk.E)
 
         self.b20 = Button(self.master, text="Set diameter ", command = self.setObjDiapx)
-        self.b20.grid(column=8,row=17,sticky = tk.W)
+        self.b20.grid(column=8,row=18,sticky = tk.W)
 
         self.b15 = Button(self.master, text="Plot PID ", command = self.setPIDPlot)
         self.b15.grid(column=7,row=8,sticky = tk.W+tk.E,columnspan =1)
 
         self.setPosFrame = tk.Label(self.master, text="Define object position: ")
-        self.setPosFrame.grid(column=2,row=18,sticky = tk.W+tk.E)
+        self.setPosFrame.grid(column=2,row=19,sticky = tk.W+tk.E)
 
         self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTemp)
-        self.spinBoxObjPos.grid(column=7, row= 18,sticky = tk.W+tk.E)
+        self.spinBoxObjPos.grid(column=7, row= 19,sticky = tk.W+tk.E)
 
         self.b16 = Button(self.master, text="Set position ", command = self.setObjPosTemp)
-        self.b16.grid(column=8,row=18,sticky = tk.W)
+        self.b16.grid(column=8,row=19,sticky = tk.W)
 
         self.b17 = Button(self.master, text = "Connect FPGA", command = connectFPGACL)
         self.b17.grid(column= 7, row = 4, sticky = tk.W+tk.E)
@@ -2155,6 +2169,9 @@ class GUI():
 
         self.b19 = Button(self.master, text="Camera calibration ", command = self.openCamCalib)
         self.b19.grid(column=7,row=9,sticky = tk.W+tk.E,columnspan =1)
+
+        self.b20 = Button(self.master, text="3D-Plot ", command = self.set3DPlot)
+        self.b20.grid(column=7,row=10,sticky = tk.W+tk.E,columnspan =1)
 
     def printValueH(self):
         print("H-value: {} ".format(self.spinBoxH.get()))
@@ -2207,6 +2224,10 @@ class GUI():
         showPIDPlot()
 
 
+    def set3DPlot(self):
+        show3DPlot()
+
+
     def openCamCalib(self):
         self.master.withdraw()
         self.newWindow = tk.Toplevel(self.master)
@@ -2227,6 +2248,10 @@ class GUI():
 
     def showFFTfcn(self):
         showFFT()
+
+
+    def posvsTime(self):
+        showPosvsTime()
 
 
     def setHSVDef(self):
