@@ -1023,7 +1023,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (150, 120, 120) #default: 120, 90, 90
+                blackUpper = (120, 90, 90) #default: 120, 90, 90
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -1343,18 +1343,22 @@ class objectDetection():
                     cv2.line(frameCropped10, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
 
                 #geometric properties
+                psi0 = 27*(2*math.pi/360)
+                psi1 = 27*(2*math.pi/360)
+                phi0 = 35*(2*math.pi/360)
                 phi1 = 35*(2*math.pi/360)
-                phi2 = 35*(2*math.pi/360)
+                theta0 = 15*(2*math.pi/360)
+                theta1 = 15*(2*math.pi/360)
                 #transformation from local to global coordinate system
-                PixCoordX0 = PixCoordX0
-                PixCoordX1 = PixCoordX1
-                PixCoordZ0 = PixCoordY0*(math.cos(phi1))
-                PixCoordZ1 = PixCoordY1*(math.cos(phi2))
-                PixCoordY0 = PixCoordX1*(math.sin(phi1))
-                PixCoordY1 = PixCoordX1*(math.sin(phi1))
-                xTri = (PixCoordX0+PixCoordX1)/2
-                yTri = (PixCoordY0+PixCoordY1)/2
-                zTri = (PixCoordZ0+PixCoordZ1)/2
+                PixCoordX0 = PixCoordX0*(math.cos(psi0))*(math.cos(theta0))
+                PixCoordX1 = PixCoordX1*(math.cos(psi1))*(math.cos(theta1))
+                PixCoordZ0 = (PixCoordY0*(math.cos(phi0)))*(math.cos(psi0))
+                PixCoordZ1 = (PixCoordY1*(math.cos(phi1)))*(math.cos(psi1))
+                PixCoordY0 = (PixCoordX0*(math.sin(phi0)))*(math.cos(psi0))
+                PixCoordY1 = (PixCoordX1*(math.sin(phi1)))*(math.cos(psi1))
+                xTri = math.sqrt(PixCoordX0**2+PixCoordX1**2)
+                yTri = math.sqrt(PixCoordY0**2+PixCoordY1**2)
+                zTri = math.sqrt(PixCoordZ0**2+PixCoordZ1**2)
 
 #                f = 0.500
 #                b = 38.27
@@ -1386,7 +1390,7 @@ class objectDetection():
                     pid.setKi(100) #default: 89.7
                     pid.setKd(0.025) #default: 0.025
 #                    pid.update(PixCoordY)
-                    pid.update(PixCoordY)
+                    pid.update(PixCoordY0)
                     pidOutputVal = float(pid.output)
                     print("PID output",pid.output)
 

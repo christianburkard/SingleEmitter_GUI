@@ -589,7 +589,7 @@ def show3DPlot():
         data = np.array(data).astype(float)
         framemax = len(data[:,1])
 
-
+    ax = plt.figure('3D Trajectory')
     ax = plt.axes(projection='3d')
 
     # Data for a three-dimensional line
@@ -602,4 +602,7 @@ def show3DPlot():
     zdata = data[:,3]
     xdata = data[:,1]
     ydata = data[:,2]
-    ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
+    ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens')
+    ax.set_xlabel('X-Coordinate')
+    ax.set_ylabel('Y_Coordinate')
+    ax.set_zlabel('Z-Coordinate');
