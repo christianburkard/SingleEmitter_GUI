@@ -1433,25 +1433,28 @@ class objectDetection():
 
                 #Transformation around phi, for 90 degrees respective angle
                 cphi0 = np.cos((90*(2*np.pi/360))-phi0)
-                sphi0 = np.sin(90*(2*np.pi/360))-phi0)
-                cphi1 = np.cos(90*(2*np.pi/360))-phi0)
-                sphi1 = np.sin(90*(2*np.pi/360))-phi0)
+                sphi0 = np.sin((90*(2*np.pi/360))-phi0)
+                cphi1 = np.cos((90*(2*np.pi/360))-phi0)
+                sphi1 = np.sin((90*(2*np.pi/360))-phi0)
+
+
 
                 Rphi0 = np.array(((cphi0, sphi0),(-sphi0, cphi0)))
                 Rphi1 = np.array(((cphi1, -sphi1),(sphi1, cphi1)))
-                vphi0 = np.array((vTransPhi0[0], vTransPhi0[1]*np.sin(phi0)))
-                vphi1 = np.array((vTransPhi1[0], vTransPhi1[1]*np.sin(phi1)))
+#                print("VTrans", vTransPhi0)
+                vphi0 = np.array((vTransPsi0[0], vTransPsi0[1]*np.sin(phi0)))
+                vphi1 = np.array((vTransPsi1[0], vTransPsi1[1]*np.sin(phi1)))
                 print("V0",vphi0)
                 print("R0",Rphi0)
                 vTransPhi0 = Rphi0.dot(vphi0)
                 vTransPhi1 = Rphi1.dot(vphi1)
-                print("VTrans", vTransPhi0)
-
                 #rotation around theta
                 xTheta0 = vTransPhi0[0]*np.cos(theta0)
                 xTheta1 = vTransPhi1[0]*np.cos(theta0)
+
                 yTheta0 = vTransPhi0[1]*np.cos(theta0)
                 yTheta1 = vTransPhi1[1]*np.cos(theta0)
+
 
 
 
@@ -1461,9 +1464,15 @@ class objectDetection():
                 xTri = vTransPhi0[0]
                 yTri = vTransPhi0[1]*np.sin(phi0)
                 zTri = vTransPhi0[1]*np.cos(phi0)
-                print("XTri",xTri)
-                print("YTri",yTri)
-                print("ZTri",zTri)
+                print("XTheta Cam0",xTheta0)
+                print("YTheta Cam1",yTheta1)
+                zTri = math.sqrt(xTheta0**2+yTheta1**2)
+
+
+
+                print("XTheta Cam1",xTheta1)
+                print("YTheta Cam0",yTheta0)
+
 
 
 
