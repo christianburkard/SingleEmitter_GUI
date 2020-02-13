@@ -597,12 +597,13 @@ def show3DPlot():
     xline = data[:,1]
     yline = data[:,2]
     ax.plot3D(xline, yline, zline, 'gray')
-
+#    ax.axis('equal')
     # Data for three-dimensional scattered points
     zdata = data[:,3]
     xdata = data[:,1]
     ydata = data[:,2]
     ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens')
+#    ax.axis('equal')
     ax.set_xlabel('X-Coordinate')
     ax.set_ylabel('Y_Coordinate')
     ax.set_zlabel('Z-Coordinate');

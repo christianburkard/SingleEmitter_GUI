@@ -1085,6 +1085,8 @@ class objectDetection():
 # =============================================================================
 # #            Array Initialization
 # =============================================================================
+            vTrans0 = np.array([])
+            vTrans1 = np.array([])
             coordArrayX0 = np.array([])
             coordArrayY0 = np.array([])
             radiusArray0 = np.array([])
@@ -1363,12 +1365,12 @@ class objectDetection():
                     cv2.line(frameCropped10, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
 
                 #geometric properties
-                psi0 = 27*(2*math.pi/360)
+                psi0 = 20*(2*math.pi/360)
                 psi1 = 20*(2*math.pi/360)
-                phi0 = 30*(2*math.pi/360)
-                phi1 = 22*(2*math.pi/360)
-                theta0 = 15*(2*math.pi/360)
-                theta1 = 15*(2*math.pi/360)
+                phi0 = 23*(2*math.pi/360)
+                phi1 = 23*(2*math.pi/360)
+                theta0 = 17*(2*math.pi/360)
+                theta1 = 17*(2*math.pi/360)
                 #transformation from local to global coordinate system
 #                PixCoordX0 = PixCoordX0*(math.cos(psi0))*(math.cos(theta0))
 #                PixCoordX1 = PixCoordX1*(math.cos(psi1))*(math.cos(theta1))
@@ -1379,54 +1381,91 @@ class objectDetection():
 # =============================================================================
 # XYZ Coordinates with Triangulation
 # =============================================================================
-                #camera 0
-                PixCoordX0Cam = PixCoordX0
-#                PixCoordY0Cam = PixCoordX0
-                PixCoordZ0Cam = PixCoordY0
-                PixCoordX0 = PixCoordX0*((math.cos(psi0))*(math.cos(theta0))) #x Coordinate absolute coordinate system
-                PixCoordY0 = (PixCoordZ0Cam*(math.cos(psi0))*math.cos(phi0)) #y Coordinate absolute coordinate system
-                PixCoordZ0 = (PixCoordZ0Cam*(math.cos(psi0)))*(math.sin(phi0)) #z Coordinate absolute coordinate system
+#                #camera 0
+#                PixCoordX0Cam = PixCoordX0
+##                PixCoordY0Cam = PixCoordX0
+#                PixCoordZ0Cam = PixCoordY0
+#                PixCoordX0 = PixCoordX0*((math.cos(psi0))*(math.cos(theta0))) #x Coordinate absolute coordinate system
+#                PixCoordY0 = (PixCoordZ0Cam*(math.cos(psi0))*math.sin(theta0)) #y Coordinate absolute coordinate system
+#                PixCoordZ0 = (PixCoordZ0Cam*(math.cos(psi0)))+(math.sin(phi0)) #z Coordinate absolute coordinate system
+#
+#
+#                #camera 1
+#                PixCoordX1Cam = PixCoordX1
+##                PixCoordY1Cam = PixCoordX1
+#                PixCoordZ1Cam = PixCoordY1
+#                PixCoordX1 = PixCoordX1*((math.cos(psi1))*(math.cos(theta1))) #x Coordinate absolute coordinate system
+#                PixCoordY1 = (PixCoordZ1Cam*(math.cos(psi1))*math.sin(theta1)) #y Coordinate absolute coordinate system
+#                PixCoordZ1 = (PixCoordZ1Cam*(math.cos(psi1)))+(math.sin(phi1)) #z Coordinate absolute coordinate system
+#
+#
+#                xTri = math.sqrt(PixCoordX0**2+PixCoordX1**2)
+##                yTri = math.sqrt(PixCoordY0**2+PixCoordY1**2)
+##                zTri = math.sqrt(PixCoordZ0**2+PixCoordZ1**2)
+#                zTri =PixCoordZ0
+#                yTri =PixCoordY1
+#                yTri0 =PixCoordY0
+#                yTri1 =PixCoordY1
+#
+#                print("XTri-Cam0",PixCoordX0)
+#                print("XTri-Cam1",PixCoordX1)
+#                print("YTri-Cam0",yTri0)
+#                print("YTri-Cam1",yTri1)
+
+# =============================================================================
+# XYZ Coordinates using rot.matrix and angle of attack phi to generate 90 degrees rotated cameras
+# =============================================================================
+                cpsi0 = np.cos(psi0)
+                spsi0 = np.sin(psi0)
+                cpsi1 = np.cos(psi0)
+                spsi1 = np.sin(psi0)
+
+                #rotation around psi
+                Rpsi0 = np.array(((cpsi0, -spsi0),(spsi0, cpsi0)))
+                Rpsi1 = np.array(((cpsi1, spsi1),(-spsi1, cpsi1)))
+                vpsi0 = np.array((PixCoordX0, PixCoordY0))
+                vpsi1 = np.array((PixCoordX1, PixCoordY1))
+                print("V0",vpsi0)
+                print("R0",Rpsi0)
+                vTransPsi0 = Rpsi0.dot(vpsi0)
+                vTransPsi1 = Rpsi1.dot(vpsi1)
+                print("VTrans", vTransPsi0)
+
+                #Transformation around phi, for 90 degrees respective angle
+                cphi0 = np.cos((90*(2*np.pi/360))-phi0)
+                sphi0 = np.sin(90*(2*np.pi/360))-phi0)
+                cphi1 = np.cos(90*(2*np.pi/360))-phi0)
+                sphi1 = np.sin(90*(2*np.pi/360))-phi0)
+
+                Rphi0 = np.array(((cphi0, sphi0),(-sphi0, cphi0)))
+                Rphi1 = np.array(((cphi1, -sphi1),(sphi1, cphi1)))
+                vphi0 = np.array((vTransPhi0[0], vTransPhi0[1]*np.sin(phi0)))
+                vphi1 = np.array((vTransPhi1[0], vTransPhi1[1]*np.sin(phi1)))
+                print("V0",vphi0)
+                print("R0",Rphi0)
+                vTransPhi0 = Rphi0.dot(vphi0)
+                vTransPhi1 = Rphi1.dot(vphi1)
+                print("VTrans", vTransPhi0)
+
+                #rotation around theta
+                xTheta0 = vTransPhi0[0]*np.cos(theta0)
+                xTheta1 = vTransPhi1[0]*np.cos(theta0)
+                yTheta0 = vTransPhi0[1]*np.cos(theta0)
+                yTheta1 = vTransPhi1[1]*np.cos(theta0)
 
 
-                #camera 1
-                PixCoordX1Cam = PixCoordX1
-#                PixCoordY1Cam = PixCoordX1
-                PixCoordZ1Cam = PixCoordY1
-                PixCoordX1 = PixCoordX1*((math.cos(psi1))*(math.cos(theta1))) #x Coordinate absolute coordinate system
-                PixCoordY1 = (PixCoordZ1Cam*(math.cos(psi1))*math.cos(phi1)) #y Coordinate absolute coordinate system
-                PixCoordZ1 = (PixCoordZ1Cam*(math.cos(psi1)))*(math.sin(phi1)) #z Coordinate absolute coordinate system
 
 
-                xTri = math.sqrt(PixCoordX0**2+PixCoordX1**2)
-#                yTri = math.sqrt(PixCoordY0**2+PixCoordY1**2)
-#                zTri = math.sqrt(PixCoordZ0**2+PixCoordZ1**2)
-                zTri =PixCoordZ0
-                yTri =PixCoordY1
-                yTri0 =PixCoordY0
-                yTri1 =PixCoordY1
 
+
+                xTri = vTransPhi0[0]
+                yTri = vTransPhi0[1]*np.sin(phi0)
+                zTri = vTransPhi0[1]*np.cos(phi0)
                 print("XTri",xTri)
-                print("YTri-Cam1",yTri1)
-                print("YTri-Cam0",yTri0)
-# =============================================================================
-# XYZ Coordinates using real and image object sizes
-# =============================================================================
-#                try:
-#                    distY0 = (objDia*((Fx0+Fy0)/2))/pixDiameter0
-#                    distY1 = (objDia*((Fx1+Fy1)/2))/pixDiameter1
-#                    distY = math.sqrt(distZ0**2+distZ1**2)
-#                except:
-#                    distY = np.nan
+                print("YTri",yTri)
+                print("ZTri",zTri)
 
-#                f = 0.500
-#                b = 38.27
-#                phi = 35*(2*math.pi/360)
-#                yTri = (b*f)/(PixCoordY1-PixCoordY0)
-#                xTri = (PixCoordY1*yTri)/(f)
-#                zTri = (PixCoordX1*yTri)/(f+math.tan(phi)*yTri)
-#                print("XTri",xTri)
-#                print("YTri",yTri)
-#                print("ZTri",zTri)
+
 
 
 
