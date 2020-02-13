@@ -25,6 +25,8 @@ from Library.stereoCameraTest import *
 from Library.stereoChessRecognition import *
 from Library.Calibration3D import *
 from Library.depthMapTuning import *
+from Library.liveDepthMap import *
+from Library.depthMapTuning import *
 import tkinter as tk
 from matplotlib import pyplot as plt
 import numpy as np
@@ -549,7 +551,7 @@ class objectDetection():
                 except:print("No radius detected ...")
 
                 # show the frame
-                if reticleIncl == 1:
+                if self.reticleIncl == 1:
                     height, width, channels = frame.shape
                     frame = frame.copy()
                     cv2.circle(frame, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
@@ -823,7 +825,7 @@ class objectDetection():
 #                cv2.imshow('Erode', mask2)
 #                cv2.imshow('Dilate', mask3)
 #                cv2.imshow("Median Filter", mask4)
-                if reticleIncl == 1:
+                if self.reticleIncl == 1:
 #                    height, width, channels = frame.shape
 #                    frame = frame.copy()
 #                    cv2.circle(frameCropped, (int(width/2), int(height/2)), 10, (255, 0, 0), -1)
@@ -838,7 +840,7 @@ class objectDetection():
                     cv2.imshow("Frame", frameCropped1)
                     key = cv2.waitKey(1) & 0xFF
 
-                if PIDIncl == 1:
+                if self.PIDIncl == 1:
                     pid = readConfigPID()
                     pid.SetPoint = float(spinBoxVal)
                     pid.setSampleTime(0.001)
@@ -869,14 +871,14 @@ class objectDetection():
                 #open-loop control adjusted via the user interface
                 objZPos = setObjPos(self, spinBoxVal)
                 print("Obj Z position value: ",objZPos)
-                if (objZPos >= 0 and PIDIncl == 0):
+                if (objZPos >= 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(objZPos)]
                     byte2 = dataByte2[int(objZPos)]
                     byte3 = dataByte3[int(objZPos)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos < 0 and PIDIncl == 0):
+                elif (objZPos < 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(720 + objZPos)]
                     byte2 = dataByte2[int(720 + objZPos)]
                     byte3 = dataByte3[int(720 + objZPos)]
@@ -886,7 +888,7 @@ class objectDetection():
 
 
 #                #closed-loop control adjusted via the user interface
-                if (pidOutputVal <= 0 and PIDIncl == 1):
+                if (pidOutputVal <= 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
@@ -895,7 +897,7 @@ class objectDetection():
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
 
-                elif (pidOutputVal > 0 and PIDIncl == 1):
+                elif (pidOutputVal > 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(objZPosCL+objZPos)]
                     byte2 = dataByte2[int(objZPosCL+objZPos)]
@@ -958,7 +960,7 @@ class objectDetection():
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,PIDIncl)
+            writePixelPositionPC(timeArray,coordArrayX,coordArrayY,radiusArray,framenum,fpsVar,self.PIDIncl)
             writePIDOutput(timeArray,coordArrayY,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
@@ -1023,7 +1025,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (120, 90, 90) #default: 120, 90, 90
+                blackUpper = (150, 120, 120) #default: 120, 90, 90
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -1047,11 +1049,25 @@ class objectDetection():
             deltaHeight1 = deltaHeight0
 #                height0, width0, channels = frameCropped0.
 #                height1, width1, channels = frame1.shape
+# =============================================================================
+#            Camera parameters
+# =============================================================================
+            Cmosx = 5.440 #CMOS width in mm
+            Cmosy = 3.072 #CMOS height in mm
+            PixCalib = 640 #calibration image  width
+            PiyCalib = 360 # calibration image height
+            fx0 = 507.41 #focal length x px
+            fy0 = 505.94 #focal length y px
+            Fx0 = fx0*(Cmosx/PixCalib) #focal length x in mm
+            Fy0 = fy0*(Cmosy/PiyCalib) #focal length y in mm
+            fx1 = 520.28 #focal length x px
+            fy1 = 518.81 #focal length y px
+            Fx1 = fx1*(Cmosx/PixCalib) #focal length x in mm
+            Fy1 = fx1*(Cmosx/PixCalib) #focal length y in mm
             width1 = 1024
             width0 = width1
             height1 = 576
             height0 = height1
-
             halfCamWidth0 = width0/2 #x-offset for centering image coordinate system
             halfCamHeight0 = height0/2 #y-offset for centering image coordinate system
             halfCamWidth1 = width0/2 #x-offset for centering image coordinate system
@@ -1065,6 +1081,10 @@ class objectDetection():
             confdef = 0.2
             framenum = 0
             fps = FPSOutput().start()
+
+# =============================================================================
+# #            Array Initialization
+# =============================================================================
             coordArrayX0 = np.array([])
             coordArrayY0 = np.array([])
             radiusArray0 = np.array([])
@@ -1086,8 +1106,8 @@ class objectDetection():
             # keep looping
             while True:
                 # grab the current frame
-                frame0 = vs0.read()
-                frame1 = vs1.read()
+                frame1 = vs0.read()
+                frame0 = vs1.read()
                 # handle the frame from VideoCapture or VideoStream
                 frame0 = frame0[1] if args.get("video", False) else frame0
                 frame1 = frame1[1] if args.get("video", False) else frame1
@@ -1191,8 +1211,8 @@ class objectDetection():
                     if (int(M0["m00"]) != 0) and (radius0 < 150 and radius0 > 20):
                         center0 = (int(M0["m10"] / M0["m00"]), int(M0["m01"] / M0["m00"]))
 #                        center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
-                        print("Center0[0]",center0[0])
-                        print("Center0[1]",center0[1])
+#                        print("Center0[0]",center0[0])
+#                        print("Center0[1]",center0[1])
                         PixCoordX0 = (center0[0]-deltaWidth0)
                         PixCoordY0 = (center0[1]-deltaHeight0)*(-1)
                         radius0 = radius0
@@ -1261,8 +1281,8 @@ class objectDetection():
                     if (int(M1["m00"]) != 0) and (radius1 < 150 and radius1 > 20):
                         center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
 #                        center1 = (int(M1["m10"] / M1["m00"]), int(M1["m01"] / M1["m00"]))
-                        print("Center0[0]",center1[0])
-                        print("Center0[1]",center1[1])
+#                        print("Center0[0]",center1[0])
+#                        print("Center0[1]",center1[1])
                         PixCoordX1 = (center1[0]-deltaWidth1)
 #                        PixCoordX1 = (center1[0]-deltaHeight0)
                         PixCoordY1 = (center1[1]-deltaHeight1)*(-1)
@@ -1331,7 +1351,7 @@ class objectDetection():
 #                cv2.imshow('Erode', mask2)
 #                cv2.imshow('Dilate', mask3)
 #                cv2.imshow("Median Filter", mask4)
-                if reticleIncl == 1:
+                if self.reticleIncl == 1:
 #                    height, width, channels = frame.shape
 #                    frameCropped0 = frameCropped0.copy()
 #                    frameCropped1 = frameCropped1.copy()
@@ -1344,21 +1364,59 @@ class objectDetection():
 
                 #geometric properties
                 psi0 = 27*(2*math.pi/360)
-                psi1 = 27*(2*math.pi/360)
-                phi0 = 35*(2*math.pi/360)
-                phi1 = 35*(2*math.pi/360)
+                psi1 = 20*(2*math.pi/360)
+                phi0 = 30*(2*math.pi/360)
+                phi1 = 22*(2*math.pi/360)
                 theta0 = 15*(2*math.pi/360)
                 theta1 = 15*(2*math.pi/360)
                 #transformation from local to global coordinate system
-                PixCoordX0 = PixCoordX0*(math.cos(psi0))*(math.cos(theta0))
-                PixCoordX1 = PixCoordX1*(math.cos(psi1))*(math.cos(theta1))
-                PixCoordZ0 = (PixCoordY0*(math.cos(phi0)))*(math.cos(psi0))
-                PixCoordZ1 = (PixCoordY1*(math.cos(phi1)))*(math.cos(psi1))
-                PixCoordY0 = (PixCoordX0*(math.sin(phi0)))*(math.cos(psi0))
-                PixCoordY1 = (PixCoordX1*(math.sin(phi1)))*(math.cos(psi1))
+#                PixCoordX0 = PixCoordX0*(math.cos(psi0))*(math.cos(theta0))
+#                PixCoordX1 = PixCoordX1*(math.cos(psi1))*(math.cos(theta1))
+#                PixCoordZ0 = (PixCoordY0*(math.cos(phi0)))*(math.cos(psi0))
+#                PixCoordZ1 = (PixCoordY1*(math.cos(phi1)))*(math.cos(psi1))
+#                PixCoordY0 = (PixCoordX0*(math.sin(phi0)))*(math.cos(psi0))
+#                PixCoordY1 = (PixCoordX1*(math.sin(phi1)))*(math.cos(psi1))
+# =============================================================================
+# XYZ Coordinates with Triangulation
+# =============================================================================
+                #camera 0
+                PixCoordX0Cam = PixCoordX0
+#                PixCoordY0Cam = PixCoordX0
+                PixCoordZ0Cam = PixCoordY0
+                PixCoordX0 = PixCoordX0*((math.cos(psi0))*(math.cos(theta0))) #x Coordinate absolute coordinate system
+                PixCoordY0 = (PixCoordZ0Cam*(math.cos(psi0))*math.cos(phi0)) #y Coordinate absolute coordinate system
+                PixCoordZ0 = (PixCoordZ0Cam*(math.cos(psi0)))*(math.sin(phi0)) #z Coordinate absolute coordinate system
+
+
+                #camera 1
+                PixCoordX1Cam = PixCoordX1
+#                PixCoordY1Cam = PixCoordX1
+                PixCoordZ1Cam = PixCoordY1
+                PixCoordX1 = PixCoordX1*((math.cos(psi1))*(math.cos(theta1))) #x Coordinate absolute coordinate system
+                PixCoordY1 = (PixCoordZ1Cam*(math.cos(psi1))*math.cos(phi1)) #y Coordinate absolute coordinate system
+                PixCoordZ1 = (PixCoordZ1Cam*(math.cos(psi1)))*(math.sin(phi1)) #z Coordinate absolute coordinate system
+
+
                 xTri = math.sqrt(PixCoordX0**2+PixCoordX1**2)
-                yTri = math.sqrt(PixCoordY0**2+PixCoordY1**2)
-                zTri = math.sqrt(PixCoordZ0**2+PixCoordZ1**2)
+#                yTri = math.sqrt(PixCoordY0**2+PixCoordY1**2)
+#                zTri = math.sqrt(PixCoordZ0**2+PixCoordZ1**2)
+                zTri =PixCoordZ0
+                yTri =PixCoordY1
+                yTri0 =PixCoordY0
+                yTri1 =PixCoordY1
+
+                print("XTri",xTri)
+                print("YTri-Cam1",yTri1)
+                print("YTri-Cam0",yTri0)
+# =============================================================================
+# XYZ Coordinates using real and image object sizes
+# =============================================================================
+#                try:
+#                    distY0 = (objDia*((Fx0+Fy0)/2))/pixDiameter0
+#                    distY1 = (objDia*((Fx1+Fy1)/2))/pixDiameter1
+#                    distY = math.sqrt(distZ0**2+distZ1**2)
+#                except:
+#                    distY = np.nan
 
 #                f = 0.500
 #                b = 38.27
@@ -1366,9 +1424,9 @@ class objectDetection():
 #                yTri = (b*f)/(PixCoordY1-PixCoordY0)
 #                xTri = (PixCoordY1*yTri)/(f)
 #                zTri = (PixCoordX1*yTri)/(f+math.tan(phi)*yTri)
-                print("XTri",xTri)
-                print("YTri",yTri)
-                print("ZTri",zTri)
+#                print("XTri",xTri)
+#                print("YTri",yTri)
+#                print("ZTri",zTri)
 
 
 
@@ -1382,7 +1440,7 @@ class objectDetection():
                 cv2.imshow("Mask31", mask31)
                 key = cv2.waitKey(1) & 0xFF
 
-                if PIDIncl == 1:
+                if self.PIDIncl == 1:
                     pid = readConfigPID()
                     pid.SetPoint = float(spinBoxVal)
                     pid.setSampleTime(0.001)
@@ -1413,14 +1471,14 @@ class objectDetection():
                 #open-loop control adjusted via the user interface
                 objZPos = setObjPos(self, spinBoxVal)
                 print("Obj Z position value: ",objZPos)
-                if (objZPos >= 0 and PIDIncl == 0):
+                if (objZPos >= 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(objZPos)]
                     byte2 = dataByte2[int(objZPos)]
                     byte3 = dataByte3[int(objZPos)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos >= 0 and PIDIncl == 0):
+                elif (objZPos >= 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(720 + objZPos)]
                     byte2 = dataByte2[int(720 + objZPos)]
                     byte3 = dataByte3[int(720 + objZPos)]
@@ -1430,7 +1488,7 @@ class objectDetection():
 
 
 #                #open-loop control adjusted via the user interface
-                if (pidOutputVal <= 0 and PIDIncl == 1):
+                if (pidOutputVal <= 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
@@ -1439,7 +1497,7 @@ class objectDetection():
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
 
-                elif (pidOutputVal > 0 and PIDIncl == 1):
+                elif (pidOutputVal > 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(objZPosCL)]
                     byte2 = dataByte2[int(objZPosCL)]
@@ -1499,9 +1557,9 @@ class objectDetection():
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPCCam1(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,PIDIncl)
-            writePixelPositionPCCam2(timeArray,coordArrayX1,coordArrayY1,radiusArray0,framenum,fpsVar,PIDIncl)
-            writePixelPosition3D(timeArray,xArrayTri,yArrayTri,zArrayTri,radiusArray0,framenum,fpsVar,PIDIncl)
+            writePixelPositionPCCam1(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,self.PIDIncl)
+            writePixelPositionPCCam2(timeArray,coordArrayX1,coordArrayY1,radiusArray0,framenum,fpsVar,self.PIDIncl)
+            writePixelPosition3D(timeArray,xArrayTri,yArrayTri,zArrayTri,radiusArray0,framenum,fpsVar,self.PIDIncl)
             writePIDOutput(timeArray,coordArrayY0,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
@@ -1871,7 +1929,7 @@ class objectDetection():
 #                cv2.imshow('Erode', mask2)
 #                cv2.imshow('Dilate', mask3)
 #                cv2.imshow("Median Filter", mask4)
-                if reticleIncl == 1:
+                if self.reticleIncl == 1:
 #                    height, width, channels = frame.shape
 #                    frameCropped0 = frameCropped0.copy()
 #                    frameCropped1 = frameCropped1.copy()
@@ -1890,7 +1948,7 @@ class objectDetection():
                 cv2.imshow("Mask31", mask31)
                 key = cv2.waitKey(1) & 0xFF
 
-                if PIDIncl == 1:
+                if self.PIDIncl == 1:
                     pid = readConfigPID()
                     pid.SetPoint = float(spinBoxVal)
                     pid.setSampleTime(0.001)
@@ -1921,14 +1979,14 @@ class objectDetection():
                 #open-loop control adjusted via the user interface
                 objZPos = setObjPos(self, spinBoxVal)
                 print("Obj Z position value: ",objZPos)
-                if (objZPos >= 0 and PIDIncl == 0):
+                if (objZPos >= 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(objZPos)]
                     byte2 = dataByte2[int(objZPos)]
                     byte3 = dataByte3[int(objZPos)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos >= 0 and PIDIncl == 0):
+                elif (objZPos >= 0 and self.PIDIncl == 0):
                     byte1 = dataByte1[int(720 + objZPos)]
                     byte2 = dataByte2[int(720 + objZPos)]
                     byte3 = dataByte3[int(720 + objZPos)]
@@ -1938,7 +1996,7 @@ class objectDetection():
 
 
 #                #open-loop control adjusted via the user interface
-                if (pidOutputVal <= 0 and PIDIncl == 1):
+                if (pidOutputVal <= 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
@@ -1947,7 +2005,7 @@ class objectDetection():
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
 
-                elif (pidOutputVal > 0 and PIDIncl == 1):
+                elif (pidOutputVal > 0 and self.PIDIncl == 1):
                     objZPosCL = (pidOutputVal/20)
                     byte1 = dataByte1[int(objZPosCL)]
                     byte2 = dataByte2[int(objZPosCL)]
@@ -2004,8 +2062,8 @@ class objectDetection():
             print("Frame mean time / s: {:.2f}".format(meanTimeFrame))
 #            PixelDiavsTime(tempPartDiaPixels, meanTimeFrame, fps.elapsed())
 
-            writePixelPositionPCCam1(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,PIDIncl)
-            writePixelPositionPCCam2(timeArray,coordArrayX1,coordArrayY1,radiusArray0,framenum,fpsVar,PIDIncl)
+            writePixelPositionPCCam1(timeArray,coordArrayX0,coordArrayY0,radiusArray0,framenum,fpsVar,self.PIDIncl)
+            writePixelPositionPCCam2(timeArray,coordArrayX1,coordArrayY1,radiusArray0,framenum,fpsVar,self.PIDIncl)
             writePIDOutput(timeArray,coordArrayY0,pidOutputArray)
 
             # if we are not using a video file, stop the camera video stream
@@ -2283,38 +2341,36 @@ class GUI():
         global selectedStopAll
         selectedStopAll = 0
         try:
-            reticleIncl = self.varRetBox.get()
+            self.reticleIncl = self.varRetBox.get()
         except:
-            reticleIncl = 0
+            self.reticleIncl = 0
         try:
-            PIDIncl = self.varPIDBox.get()
+            self.PIDIncl = self.varPIDBox.get()
         except:
-            PIDIncl = 0
+            self.PIDIncl = 0
 
         if selected == 0:
-            objectDetection.objectDetectionPicamera(self,selected,PIDIncl,reticleIncl)
+            objectDetection.objectDetectionPicamera(self,selected,self.PIDIncl,self.reticleIncl)
         elif selected == 1:
-            objectDetection.objectDetectionUSBCamera(self,selected,PIDIncl,reticleIncl)
+            objectDetection.objectDetectionUSBCamera(self,selected,self.PIDIncl,self.reticleIncl)
         elif selected == 3:
-            objectDetection.objectDetectionOther(self,selected,PIDIncl,reticleIncl)
+            objectDetection.objectDetectionOther(self,selected,self.PIDIncl,self.reticleIncl)
         elif selected == 2:
-            objectDetection.objectDetectionZMeasurement(self,selected,PIDIncl,reticleIncl)
+            objectDetection.objectDetectionZMeasurement(self,selected,self.PIDIncl,self.reticleIncl)
         elif selected == 4:
-            objectDetection.objectDetectionCropped(self,selected,PIDIncl,reticleIncl)
+            objectDetection.objectDetectionCropped(self,selected,self.PIDIncl,self.reticleIncl)
 
 
     def setPIDIncl(self):
-        global PIDIncl
-        PIDIncl = self.varPIDBox.get()
+        self.PIDIncl = self.varPIDBox.get()
         if self.varPIDBox.get() == 1:
             print("PID included ...") #if checkbox is activated, value is equak to 1, otherwise 0
         elif self.varPIDBox.get() == 0:
             print("PID not included ...") #if checkbox is activated, value is equak to 1, otherwise 0
 
     def setReticleIncl(self):
-        global reticleIncl
         print("Reticle value:",self.varRetBox.get()) #if checkbox is activated, value is equak to 1, otherwise 0
-        reticleIncl = self.varRetBox.get()
+        self.reticleIncl = self.varRetBox.get()
 
 
     def stopAll(self):
@@ -2539,13 +2595,14 @@ class winZClosedLoop():
 
 class camCalib():
 
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master,  *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.master = master
         self.frame = Frame(self.master)
         self.master.lift()
 
+#        self.stereo_depth_map(self)
         self.master.title("Camera calibration")
         self.master.geometry('600x400+1000+600')
 
@@ -2593,13 +2650,16 @@ class camCalib():
         bckBtn = GUI(self.master,cameraChoice)
 
     def setReticleIncl(self):
-        global reticleIncl
         print("Reticle value:",self.varRetBox.get()) #if checkbox is activated, value is equak to 1, otherwise 0
-        reticleIncl = self.varRetBox.get()
+        self.reticleIncl = self.varRetBox.get()
 
 
     def setStereoCameraTest(self):
-        stereoCameraTest(reticleIncl)
+        try:
+            self.reticleIncl = self.varRetBox.get()
+        except:
+            self.reticleIncl = 0
+        stereoCameraTest(self.reticleIncl)
         print("Camera test closed")
 
 
@@ -2614,21 +2674,22 @@ class camCalib():
 
 
     def setTuning(self):
-        startdepthMapTuning()
+        depthMapTuning.startdepthMapTuning(self)
         print("Tuning closed")
 
 
     def setRealTime(self):
-
+        liveDepthMap.depthMapStereo(self)
         print("Real time depth map closed")
 
 
     def setCloseAll(self):
-
         print("")
+
 
     def updateWindow1():
         window1.update()
+
 
     def destroyWind(self):
         window.destroy()
@@ -2647,4 +2708,4 @@ if __name__ == '__main__':
     window.mainloop()
     window.update()
     window1 = tk.Tk()
-    appCalibCamera = camCalib(window1)
+    appCalibCamera = camCalib(self, window1)

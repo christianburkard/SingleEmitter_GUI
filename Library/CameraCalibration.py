@@ -38,7 +38,7 @@ criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
 objp = np.zeros((9*6,3), np.float32)
-objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)*10 #multiplier for distance in mm
+objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)*2.5 #multiplier for distance in mm
 
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
@@ -146,11 +146,3 @@ dst_rem = cv2.remap(img,mapx,mapy,cv2.INTER_LINEAR)
 x_rem,y_rem,w_rem,h_rem = roi
 dst_rem = dst[y_rem:y_rem+h_rem, x_rem:x_rem+w_rem]
 cv2.imwrite('./Images/calibresults_remapped.png',dst_rem)
-
-
-
-
-
-
-
-
