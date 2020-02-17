@@ -1431,15 +1431,26 @@ class objectDetection():
                 print("V1",vphi1)
 
                 Rglobal = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
+                Rglobal3D = np.array(((1, 0, 0), (0, np.cos(psi0), -np.sin(psi0)), (0, np.sin(psi0), np.cos(psi0))))
 
                 vpsi0 = np.array
 
 
-                xTri = (vphi0[0]+vphi1[0])/2
-                yTri = vphi0[1]*0.5
-                zTri = vphi1[1]*
+                xTriLocal = (vphi0[0]+vphi1[0])/2
+                yTriLocal = vphi0[1]
+                zTriLocal = vphi1[1]
+
+                vGlobal = np.array((xTriLocal, yTriLocal, zTriLocal))
+                vGlobal = vGlobal.dot(Rglobal3D)
 
 
+                xTri = vGlobal[0]
+                zTri = vGlobal[1]
+                yTri = vGlobal[2]
+
+                print('X',xTri)
+                print('Y',yTri)
+                print('Z',zTri)
 
                 # show the frame to our screen
 #                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
