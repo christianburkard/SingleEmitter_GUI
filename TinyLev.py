@@ -644,7 +644,7 @@ class objectDetection():
                 blackUpper = (int(valueUpperH), int(valueUpperS), int(valueUpperV))
                 print("Costumized HSV values entered ...")
             except:
-                blackUpper = (150, 120, 120)
+                blackUpper = (120, 90, 90)
                 print("Set HSV default values ")
             blackLower = (0, 0, 0)
             pts = deque(maxlen=buffer)
@@ -1108,8 +1108,8 @@ class objectDetection():
             # keep looping
             while True:
                 # grab the current frame
-                frame1 = vs0.read()
-                frame0 = vs1.read()
+                frame0 = vs0.read()
+                frame1 = vs1.read()
                 # handle the frame from VideoCapture or VideoStream
                 frame0 = frame0[1] if args.get("video", False) else frame0
                 frame1 = frame1[1] if args.get("video", False) else frame1
@@ -1365,10 +1365,10 @@ class objectDetection():
                     cv2.line(frameCropped10, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
 
                 #geometric properties
-                psi0 = 20*(2*math.pi/360)
-                psi1 = 20*(2*math.pi/360)
-                phi0 = 23*(2*math.pi/360)
-                phi1 = 23*(2*math.pi/360)
+                psi0 = 45*(2*math.pi/360)
+                psi1 = 45*(2*math.pi/360)
+                phi0 = 15.25*(2*math.pi/360)
+                phi1 = 8.25*(2*math.pi/360)
                 theta0 = 17*(2*math.pi/360)
                 theta1 = 17*(2*math.pi/360)
                 #transformation from local to global coordinate system
@@ -1415,68 +1415,29 @@ class objectDetection():
 # =============================================================================
 # XYZ Coordinates using rot.matrix and angle of attack phi to generate 90 degrees rotated cameras
 # =============================================================================
-                cpsi0 = np.cos(psi0)
-                spsi0 = np.sin(psi0)
-                cpsi1 = np.cos(psi0)
-                spsi1 = np.sin(psi0)
+                cphi0 = np.cos(phi0)
+                sphi0 = np.sin(phi0)
+                cphi1 = np.cos(phi0)
+                sphi1 = np.sin(phi0)
 
-                #rotation around psi
-                Rpsi0 = np.array(((cpsi0, -spsi0),(spsi0, cpsi0)))
-                Rpsi1 = np.array(((cpsi1, spsi1),(-spsi1, cpsi1)))
-                vpsi0 = np.array((PixCoordX0, PixCoordY0))
-                vpsi1 = np.array((PixCoordX1, PixCoordY1))
-                print("V0",vpsi0)
-                print("R0",Rpsi0)
-                vTransPsi0 = Rpsi0.dot(vpsi0)
-                vTransPsi1 = Rpsi1.dot(vpsi1)
-                print("VTrans", vTransPsi0)
-
-                #Transformation around phi, for 90 degrees respective angle
-                cphi0 = np.cos((90*(2*np.pi/360))-phi0)
-                sphi0 = np.sin((90*(2*np.pi/360))-phi0)
-                cphi1 = np.cos((90*(2*np.pi/360))-phi0)
-                sphi1 = np.sin((90*(2*np.pi/360))-phi0)
-
-
-
-                Rphi0 = np.array(((cphi0, sphi0),(-sphi0, cphi0)))
-                Rphi1 = np.array(((cphi1, -sphi1),(sphi1, cphi1)))
-#                print("VTrans", vTransPhi0)
-                vphi0 = np.array((vTransPsi0[0], vTransPsi0[1]*np.sin(phi0)))
-                vphi1 = np.array((vTransPsi1[0], vTransPsi1[1]*np.sin(phi1)))
+                #rotation around phi axis
+                Rphi0 = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
+                Rphi1 = np.array(((cphi1, sphi1),(-sphi1, cphi1)))
+                vphi0 = np.array((PixCoordX0, PixCoordY0))
+                vphi1 = np.array((PixCoordX1, PixCoordY1))
+                vphi0 = vphi0.dot(Rphi0) #
+                vphi1 = vphi1.dot(Rphi1)
                 print("V0",vphi0)
-                print("R0",Rphi0)
-                vTransPhi0 = Rphi0.dot(vphi0)
-                vTransPhi1 = Rphi1.dot(vphi1)
-                #rotation around theta
-                xTheta0 = vTransPhi0[0]*np.cos(theta0)
-                xTheta1 = vTransPhi1[0]*np.cos(theta0)
+                print("V1",vphi1)
 
-                yTheta0 = vTransPhi0[1]*np.cos(theta0)
-                yTheta1 = vTransPhi1[1]*np.cos(theta0)
+                Rglobal = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
+
+                vpsi0 = np.array
 
 
-
-
-
-
-
-                xTri = vTransPhi0[0]
-                yTri = vTransPhi0[1]*np.sin(phi0)
-                zTri = vTransPhi0[1]*np.cos(phi0)
-                print("XTheta Cam0",xTheta0)
-                print("YTheta Cam1",yTheta1)
-                zTri = math.sqrt(xTheta0**2+yTheta1**2)
-
-
-
-                print("XTheta Cam1",xTheta1)
-                print("YTheta Cam0",yTheta0)
-
-
-
-
-
+                xTri = (vphi0[0]+vphi1[0])/2
+                yTri = vphi0[1]*0.5
+                zTri = vphi1[1]*
 
 
 
