@@ -5,13 +5,102 @@ Author: Christian Burkard
 Masterthesis: Closed-Loop Control of an Acoustic Levitation System
 Setup for MultiLev 3D position controlling
 """
+
+# import the necessary packages
+from __future__ import print_function
+from imutils.video import VideoStream
+from imutils.video import FPS
+from Library.ThreadsLib import FPSOutput
+from Library.ThreadsLib import WebcamVideoStream
+from imutils.video.pivideostream import PiVideoStream
+from Library.Calculation import Calculation
+from Library.Functions import *
+from Library.ArduinoPort import *
+from Library.FFTPlot import *
+from Library.pathFinder import *
+from Library.settings import *
+from Library import PID
+from Library.stereoCameraTest import *
+from Library.stereoChessRecognition import *
+from Library.Calibration3D import *
+from Library.depthMapTuning import *
+from Library.liveDepthMap import *
+from Library.depthMapTuning import *
+from Library.MultiLev import *
+from TinyLev import *
+import tkinter as tk
+from matplotlib import pyplot as plt
+import numpy as np
+import argparse
+import cv2
+import imutils
+from collections import deque
+import time
+import dlib
+import csv
+import time
+import threading
+import queue
+import sys
+import random
+import serial
+import pandas as pd
+import math
+from PIL import Image
+#from picamera.array import PiRGBArray
+#from picamera import PiCamera
+import tkinter as tk
+from tkinter import filedialog, Canvas
+import keyboard
+from tkinter.ttk import Frame, Button, Entry, Style
+from concurrent import futures
+from Library.modeMovement import modeMovement
+
+
+
+def connectFPGA():
+    """The function initiates the Connection to the UART device with the Port and Buad fed through the Entry
+    boxes in the application."""
+    global serialObject
+    try:
+        print("Establishing connection to FPGA ..")
+        serialObject = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+        print("Connection established ..")
+    except:
+        print("Cant Open Specified Port")
+
+
+def connectFPGACL():
+    """The function initiates the Connection to the UART device with the Port and Buad fed through the Entry
+    boxes in the application."""
+    global serialObject
+    try:
+        print("Establishing connection to FPGA ..")
+        serialObject = serial.Serial('COM12', 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE)
+        print("Connection established ..")
+    except:
+        print("Cant Open Specified Port")
+
+
+def closeFPGACL():
+    """The function initiates the Connection to the UART device with the Port and Buad fed through the Entry
+    boxes in the application."""
+
+    try:
+        print("Closing connection to FPGA ..")
+        serialObject.close()
+        print("Connection closed ..")
+    except:
+        print("Cant Open Specified Port")
+
+
 # =============================================================================
 # MultiLev
 # =============================================================================
-class MultiLev:
+
     def objectDetectionMultiLev(self,selected,PIDIncl,reticleIncl):
 
-        if selected == 3:
+        if selected == 5:
 
             time.sleep(0.2)
             #Start timer
@@ -385,7 +474,7 @@ class MultiLev:
                 if key == ord("r"):
     #                cmdStopTimer()
                     break
-                elif selectedStopAll == 1:
+                elif self.selectedStopAll == 1:
                     break
 
 #                try:

@@ -15,10 +15,7 @@ from numpy import *
 import math
 
 UARTspeed=250000
-com='com5'
-
-
-
+com='com12'
 pi=3.14159
 
 mainshift=pi #phaseshift between the two caps
@@ -37,8 +34,6 @@ wiresShiftCorrection2 = np.array([1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0
 #transfer vector from the number of the transducer position to the number of the PCB output
 convertTransducerPosition = np.array([30,31,32,33,34,35,18,19,20,21,22,23,24,25,26,27,28,29,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,71,70,69,68,67,66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36])
 phase = np.zeros(anzTransducer)
-
-
 
 
 
@@ -82,24 +77,24 @@ def update(x,y,z):
         phaseByte = bytes(int(phaseTot  % 256).to_bytes(1,'big'))
         dutyByte = bytes(int((dutyTot * 4 + math.floor((phaseTot/256)))).to_bytes(1,'big'))
 #send the bytes
-        data.write(dutyByte)
-        data.write(phaseByte)
+        serialObject.write(dutyByte)
+        serialObject.write(phaseByte)
 
 def reset():
 
     res = 255
-    data.write(bytes(res.to_bytes(1,'big')))
-    data.write(bytes(res.to_bytes(1,'big')))
+    serialObject.write(bytes(res.to_bytes(1,'big')))
+    serialObject.write(bytes(res.to_bytes(1,'big')))
 
 
-data = serial.Serial(com,UARTspeed,timeout=1)
+serialObject = serial.Serial(com,UARTspeed,timeout=1)
 reset()
 update(0,0,0)
 start=time.time()
 for i in range(0,1000):
-    update(0,i/100,0)
+    update(i/100, i/100, i/100)
 for i in range(0,1000):
-    update(0,(999-i)/100,0)
+    update((999-i)/100 ,(999-i)/100, (999-i)/100)
 end=time.time()
 print(end-start)
-data.close()
+serialObject.close()
