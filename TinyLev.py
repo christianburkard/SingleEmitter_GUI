@@ -27,6 +27,7 @@ from Library.Calibration3D import *
 from Library.depthMapTuning import *
 from Library.liveDepthMap import *
 from Library.depthMapTuning import *
+from Library.MultiLev import *
 import tkinter as tk
 from matplotlib import pyplot as plt
 import numpy as np
@@ -77,7 +78,8 @@ cameraChoice = [
     ("USB Camera"),
     ("USB Camera PID"),
     ("Stereo Camera"),
-    ("Stereo Cropped")]
+    ("Stereo Cropped"),
+    ("MultiLev")]
 
 modeMeasuring = [
         ("Mode 1"),
@@ -311,11 +313,14 @@ def showEMPDFile():
     filepath = filedialog.askopenfilename()
     Calculation.meanParticleSize(filepath)
 
-def printCoordsGui(self, CoordR, CoordZ):
-    formatZ = ("{0:.1f}".format(CoordZ))
-    formatR = ("{0:.1f}".format(CoordR))
+def printCoordsGui(self, xTri, yTri, zTri):
+    formatX = ("{0:.1f}".format(xTri))
+    formatY = ("{0:.1f}".format(yTri))
+    formatZ = ("{0:.1f}".format(zTri))
+
+    self.xCoordLbl['text'] = "X-Coordinate:   " + formatX
+    self.yCoordLbl['text'] = "Y-Coordinate:   " + formatY
     self.zCoordLbl['text'] = "Z-Coordinate:   " + formatZ
-    self.rCoordLbl['text'] = "R-Coordinate:   " + formatR
 
 
 def clickedMeanDia():
@@ -323,9 +328,9 @@ def clickedMeanDia():
     selectedCam = selected
     Calculation.meanParticleSize(selectedCam)
 
+
 def clickedShowRadiusvsTime():
         showRadiusvsFrame()
-
 
 
 def safeSetPoint():
@@ -1465,10 +1470,10 @@ class objectDetection():
                     pid.SetPoint = float(spinBoxVal)
                     pid.setSampleTime(0.001)
                     pid.setKp(1.1) #default: 3.1
-                    pid.setKi(100) #default: 89.7
+                    pid.setKi(200) #default: 89.7
                     pid.setKd(0.025) #default: 0.025
 #                    pid.update(PixCoordY)
-                    pid.update(PixCoordY0)
+                    pid.update(zTri)
                     pidOutputVal = float(pid.output)
                     print("PID output",pid.output)
 
@@ -1509,7 +1514,7 @@ class objectDetection():
 
 #                #open-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and self.PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/20)
+                    objZPosCL = (pidOutputVal/15)
                     byte1 = dataByte1[int(719 + objZPosCL)]
                     byte2 = dataByte2[int(719 + objZPosCL)]
                     byte3 = dataByte3[int(719 + objZPosCL)]
@@ -1518,7 +1523,7 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and self.PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/20)
+                    objZPosCL = (pidOutputVal/15)
                     byte1 = dataByte1[int(objZPosCL)]
                     byte2 = dataByte2[int(objZPosCL)]
                     byte3 = dataByte3[int(objZPosCL)]
@@ -1550,7 +1555,7 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-                printCoordsGui(self, PixCoordX0, PixCoordY0)
+                printCoordsGui(self, xTri, yTri, zTri)
                 window.update()
 
 #                time.sleep(0.5)
@@ -2194,50 +2199,53 @@ class GUI():
         self.RetBox = Checkbutton(self.master, text = "Include Reticle", variable=self.varRetBox,command=self.setReticleIncl)
         self.RetBox.grid(column=1,row=8,sticky = tk.W,columnspan =1)
 
-        self.rCoordLbl = tk.Label(self.master, text="R-Coordinate: --:--")
-        self.rCoordLbl.grid(column=2,row=14,sticky = tk.W+tk.E)
+        self.xCoordLbl = tk.Label(self.master, text="X-Coordinate: --:--")
+        self.xCoordLbl.grid(column=2,row=14,sticky = tk.W+tk.E)
+
+        self.yCoordLbl = tk.Label(self.master, text="Y-Coordinate: --:--")
+        self.yCoordLbl.grid(column=2,row=15,sticky = tk.W+tk.E)
 
         self.zCoordLbl = tk.Label(self.master, text="Z-Coordinate: --:--")
-        self.zCoordLbl.grid(column=2,row=15,sticky = tk.W+tk.E)
+        self.zCoordLbl.grid(column=2,row=16,sticky = tk.W+tk.E)
 
-        self.setPntFrame = tk.Label(self.master, text="Define frame width: ")
-        self.setPntFrame.grid(column=2,row=15,sticky = tk.W+tk.E)
-
-        self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
-        self.spinBoxWidth.grid(column=7, row= 16,sticky = tk.W+tk.E)
-
-        self.b13 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
-        self.b13.grid(column=8,row=16,sticky = tk.W)
-
-        self.setPntFrame = tk.Label(self.master, text="Define object diameter/ mm: ")
+        self.setPntFrame = tk.Label(self.master, text="Define Frame Width: ")
         self.setPntFrame.grid(column=2,row=17,sticky = tk.W+tk.E)
 
+        self.spinBoxWidth = tk.Spinbox(self.master, from_ =1, to=1024, command = self.printFrameWidth)
+        self.spinBoxWidth.grid(column=7, row= 17,sticky = tk.W+tk.E)
+
+        self.b13 = Button(self.master, text="Set Width ", command = self.setFrameWidth)
+        self.b13.grid(column=8,row=17,sticky = tk.W)
+
+        self.setPntFrame = tk.Label(self.master, text="Define Object Diameter/ mm: ")
+        self.setPntFrame.grid(column=2,row=18,sticky = tk.W+tk.E)
+
         self.spinBoxObjDiamm = tk.Spinbox(self.master, from_ =1, to=1024, command = self.setObjDiamm)
-        self.spinBoxObjDiamm.grid(column=7, row= 17,sticky = tk.W+tk.E)
+        self.spinBoxObjDiamm.grid(column=7, row= 18,sticky = tk.W+tk.E)
 
-        self.b14 = Button(self.master, text="Set diameter ", command = self.setObjDiamm)
-        self.b14.grid(column=8,row=17,sticky = tk.W)
+        self.b14 = Button(self.master, text="Set Diameter ", command = self.setObjDiamm)
+        self.b14.grid(column=8,row=18,sticky = tk.W)
 
-        self.setPntObjDia = tk.Label(self.master, text="Define object diameter/ px: ")
-        self.setPntObjDia.grid(column=2,row=18,sticky = tk.W+tk.E)
+        self.setPntObjDia = tk.Label(self.master, text="Define Object Diameter/ px: ")
+        self.setPntObjDia.grid(column=2,row=19,sticky = tk.W+tk.E)
 
         self.spinBoxObjDiaPx = tk.Spinbox(self.master, from_ =0.1, to=200, command = self.setObjDiapx)
-        self.spinBoxObjDiaPx.grid(column=7, row= 18,sticky = tk.W+tk.E)
+        self.spinBoxObjDiaPx.grid(column=7, row= 19,sticky = tk.W+tk.E)
 
-        self.b20 = Button(self.master, text="Set diameter ", command = self.setObjDiapx)
-        self.b20.grid(column=8,row=18,sticky = tk.W)
+        self.b20 = Button(self.master, text="Set Diameter ", command = self.setObjDiapx)
+        self.b20.grid(column=8,row=19,sticky = tk.W)
 
         self.b15 = Button(self.master, text="Plot PID ", command = self.setPIDPlot)
         self.b15.grid(column=7,row=8,sticky = tk.W+tk.E,columnspan =1)
 
-        self.setPosFrame = tk.Label(self.master, text="Define object position: ")
-        self.setPosFrame.grid(column=2,row=19,sticky = tk.W+tk.E)
+        self.setPosFrame = tk.Label(self.master, text="Define Object Position: ")
+        self.setPosFrame.grid(column=2,row=20,sticky = tk.W+tk.E)
 
         self.spinBoxObjPos = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTemp)
-        self.spinBoxObjPos.grid(column=7, row= 19,sticky = tk.W+tk.E)
+        self.spinBoxObjPos.grid(column=7, row= 20,sticky = tk.W+tk.E)
 
-        self.b16 = Button(self.master, text="Set position ", command = self.setObjPosTemp)
-        self.b16.grid(column=8,row=19,sticky = tk.W)
+        self.b16 = Button(self.master, text="Set Position ", command = self.setObjPosTemp)
+        self.b16.grid(column=8,row=20,sticky = tk.W)
 
         self.b17 = Button(self.master, text = "Connect FPGA", command = connectFPGACL)
         self.b17.grid(column= 7, row = 4, sticky = tk.W+tk.E)
@@ -2249,11 +2257,12 @@ class GUI():
         self.PIDBox = Checkbutton(self.master, text = "Include PID     ", variable=self.varPIDBox,command=self.setPIDIncl)
         self.PIDBox.grid(column=1,row=7,sticky = tk.W,columnspan =1)
 
-        self.b19 = Button(self.master, text="Camera calibration ", command = self.openCamCalib)
+        self.b19 = Button(self.master, text="Camera Calibration ", command = self.openCamCalib)
         self.b19.grid(column=7,row=9,sticky = tk.W+tk.E,columnspan =1)
 
         self.b20 = Button(self.master, text="3D-Plot ", command = self.set3DPlot)
         self.b20.grid(column=7,row=10,sticky = tk.W+tk.E,columnspan =1)
+
 
     def printValueH(self):
         print("H-value: {} ".format(self.spinBoxH.get()))
@@ -2379,7 +2388,8 @@ class GUI():
             objectDetection.objectDetectionZMeasurement(self,selected,self.PIDIncl,self.reticleIncl)
         elif selected == 4:
             objectDetection.objectDetectionCropped(self,selected,self.PIDIncl,self.reticleIncl)
-
+        elif selected == 5:
+            MultiLev.objectDetectionMultiLev(self,selected,self.PIDIncl,self.reticleIncl)
 
     def setPIDIncl(self):
         self.PIDIncl = self.varPIDBox.get()
@@ -2533,6 +2543,7 @@ class measureZPosOL():
         print("Serial bytes changed to default values ...")
 
 
+
     def startMeasZPosOL(self):
         if self.modeChoice.get() == 0:
             modeMovement.modeMovementUp(self)
@@ -2543,7 +2554,6 @@ class measureZPosOL():
 
 
 class winZClosedLoop():
-
     def __init__(self, master):
 
 
