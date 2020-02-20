@@ -21,6 +21,9 @@ from Library.FFTPlot import *
 from Library.pathFinder import *
 from Library.settings import *
 from Library import PID
+from Library import PIDMultiX
+from Library import PIDMultiY
+from Library import PIDMultiZ
 from Library.stereoCameraTest import *
 from Library.stereoChessRecognition import *
 from Library.Calibration3D import *
@@ -61,6 +64,7 @@ from Library.modeMovement import modeMovement
 #####################################
 #Initialization
 #####################################
+
 
 plt.ion()
 x = []
@@ -106,32 +110,33 @@ valueVdef = 90
 #window = tk.Tk()
 
 
+
+
 def setObjPos(self, spinBoxVal):
-    print("Object position changed manually to: ",spinBoxVal)
+    print("Object position changed manually to: ",spinBoxValX)
     self.globObjPos
 
 
 def setObjPosX(self, spinBoxValX):
-    print("Object position changed manually to: ", spinBoxVal)
+#    print("Object position changed manually to: ", spinBoxValX)
     self.globObjPosX = int(spinBoxValX)
     return self.globObjPosX
 
 
 def setObjPosY(self, spinBoxValY):
-    print("Object position changed manually to: ", spinBoxValY)
+#    print("Object position changed manually to: ", spinBoxValY)
     self.globObjPosY = int(spinBoxValY)
     return self.globObjPosY
 
 
 def setObjPosZ(self, spinBoxValZ):
-    print("Object position changed manually to: ", spinBoxValZ)
+#    print("Object position changed manually to: ", spinBoxValZ)
     self.globObjPosZ = int(spinBoxValZ)
     return self.globObjPosZ
 
 
 def setObjDiamm(self, objDia):
     print("Object diameter changed manually to: ",objDia)
-    self.globObjDia
     self.globObjDia = int(self.objDia)
     return self.globObjPos
 
@@ -641,7 +646,7 @@ class objectDetection():
             posZ = 0
             initPIDParams(posZ,P,I,D)
             time.sleep(0.1)
-            createConfigPID()
+            createConfigPID(posZ,P,I,D)
             time.sleep(0.1)
 
             try:
@@ -860,7 +865,7 @@ class objectDetection():
 
                 if self.PIDIncl == 1:
                     pid = readConfigPID()
-                    pid.SetPoint = float(spinBoxVal)
+                    pid.SetPoint = float(spinBoxValZ)
                     pid.setSampleTime(0.001)
                     pid.setKp(1.1) #default: 3.1
                     pid.setKi(100) #default: 89.7
@@ -887,19 +892,19 @@ class objectDetection():
 #                    spinBoxVal = 0 #in mm
 
                 #open-loop control adjusted via the user interface
-                objZPosX = setObjPosX(self, spinBoxVal)
-                print("Obj Z position value: ",objZPosX)
-                if (objZPosX >= 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(objZPosX)]
-                    byte2 = dataByte2[int(objZPosX)]
-                    byte3 = dataByte3[int(objZPosX)]
+                objZPosZ = setObjPosZ(self, spinBoxValZ)
+                print("Obj Z position value: ",objZPosZ)
+                if (objZPosZ >= 0 and self.PIDIncl == 0):
+                    byte1 = dataByte1[int(objZPosZ)]
+                    byte2 = dataByte2[int(objZPosZ)]
+                    byte3 = dataByte3[int(objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos < 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(720 + objZPosX)]
-                    byte2 = dataByte2[int(720 + objZPosX)]
-                    byte3 = dataByte3[int(720 + objZPosX)]
+                elif (objZPosZ < 0 and self.PIDIncl == 0):
+                    byte1 = dataByte1[int(720 + objZPosZ)]
+                    byte2 = dataByte2[int(720 + objZPosZ)]
+                    byte3 = dataByte3[int(720 + objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
@@ -907,19 +912,19 @@ class objectDetection():
 
 #                #closed-loop control adjusted via the user interface
                 if (pidOutputVal <= 0 and self.PIDIncl == 1):
-                    objZPosCLX = (pidOutputVal/20)
-                    byte1 = dataByte1[int(719 + objZPosCLX)]
-                    byte2 = dataByte2[int(719 + objZPosCLX)]
-                    byte3 = dataByte3[int(719 + objZPosCLX)]
+                    objZPosCLZ = (pidOutputVal/20)
+                    byte1 = dataByte1[int(719 + objZPosCLZ)]
+                    byte2 = dataByte2[int(719 + objZPosCLZ)]
+                    byte3 = dataByte3[int(719 + objZPosCLZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and self.PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/20)
-                    byte1 = dataByte1[int(objZPosCLX+objZPosX)]
-                    byte2 = dataByte2[int(objZPosCLX+objZPosX)]
-                    byte3 = dataByte3[int(objZPosCLX+objZPosX)]
+                    objZPosCLZ = (pidOutputVal/20)
+                    byte1 = dataByte1[int(objZPosCLZ+objZPosZ)]
+                    byte2 = dataByte2[int(objZPosCLZ+objZPosZ)]
+                    byte3 = dataByte3[int(objZPosCLZ+objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
@@ -947,7 +952,7 @@ class objectDetection():
                 try:
                     if framenum % updateRatePos == 0:
                         realCoordZ = int((PixCoordY*(tempObjDiaReal/tempObjDiaPx))*20)
-                        printCoordsGui(self, PixCoordX, realCoordZ)
+                        printCoordsGui(self, PixCoordX, 0,PixCoordY)
                     else:
                         None
                 except:
@@ -1026,7 +1031,7 @@ class objectDetection():
             posZ = 0
             initPIDParams(posZ,P,I,D)
             time.sleep(0.1)
-            createConfigPID()
+            createConfigPID(posZ,P,I,D)
             time.sleep(0.1)
             try:
                 dataByte1, dataByte2, dataByte3 = defaultLookUp()
@@ -1480,7 +1485,7 @@ class objectDetection():
 
                 if self.PIDIncl == 1:
                     pid = readConfigPID()
-                    pid.SetPoint = float(spinBoxVal)
+                    pid.SetPoint = float(spinBoxValZ)
                     pid.setSampleTime(0.001)
                     pid.setKp(1.1) #default: 3.1
                     pid.setKi(200) #default: 89.7
@@ -1507,19 +1512,19 @@ class objectDetection():
 #                    spinBoxVal = 0 #in mm
 
                 #open-loop control adjusted via the user interface
-                objZPosX = setObjPosX(self, spinBoxVal)
-                print("Obj Z position value: ",objZPosX)
-                if (objZPosX >= 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(objZPosX)]
-                    byte2 = dataByte2[int(objZPosX)]
-                    byte3 = dataByte3[int(objZPosX)]
+                objZPosZ = setObjPosZ(self, spinBoxValZ)
+                print("Obj Z position value: ",objZPosZ)
+                if (objZPosZ >= 0 and self.PIDIncl == 0):
+                    byte1 = dataByte1[int(objZPosZ)]
+                    byte2 = dataByte2[int(objZPosZ)]
+                    byte3 = dataByte3[int(objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
-                elif (objZPos < 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(720 + objZPosX)]
-                    byte2 = dataByte2[int(720 + objZPosX)]
-                    byte3 = dataByte3[int(720 + objZPosX)]
+                elif (objZPosZ < 0 and self.PIDIncl == 0):
+                    byte1 = dataByte1[int(720 + objZPosZ)]
+                    byte2 = dataByte2[int(720 + objZPosZ)]
+                    byte3 = dataByte3[int(720 + objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
@@ -1536,10 +1541,10 @@ class objectDetection():
                     print("Serial Values: ",byte1)
 
                 elif (pidOutputVal > 0 and self.PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/20)
-                    byte1 = dataByte1[int(objZPosCLX+objZPosX)]
-                    byte2 = dataByte2[int(objZPosCLX+objZPosX)]
-                    byte3 = dataByte3[int(objZPosCLX+objZPosX)]
+                    objZPosCLZ = (pidOutputVal/20)
+                    byte1 = dataByte1[int(objZPosCLZ+objZPosZ)]
+                    byte2 = dataByte2[int(objZPosCLZ+objZPosZ)]
+                    byte3 = dataByte3[int(objZPosCLZ+objZPosZ)]
                     values = bytearray([byte1, byte2, byte3])
                     serialObject.write(values)
                     print("Serial Values: ",byte1)
@@ -2073,7 +2078,8 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-                printCoordsGui(self, PixCoordX0, PixCoordY0)
+#                printCoordsGui(self, PixCoordX0, PixCoordY0)
+                printCoordsGui(self, PixCoordX0, 0,PixCoordY0)
                 window.update()
 
 #                time.sleep(0.5)
@@ -2144,7 +2150,80 @@ class objectDetection():
                 objDia = 2 #in mm
                 print("Default object diameter: ", objDia)
 
+            try:
+                tempObjDiaReal = setObjDiamm()
+            except:
+                tempObjDiaReal = 2.1 #mm
+            try:
+                tempObjDiaPx = setObjDiapx()
+            except:
+                tempObjDiaPx = 40 #px
 
+            #geometrical initialization
+            psi0 = 45*(2*math.pi/360)
+            psi1 = 45*(2*math.pi/360)
+            phi0 = 15.25*(2*math.pi/360)
+            phi1 = 8.25*(2*math.pi/360)
+            theta0 = 17*(2*math.pi/360)
+            theta1 = 17*(2*math.pi/360)
+            cphi0 = np.cos(phi0)
+            sphi0 = np.sin(phi0)
+            cphi1 = np.cos(phi0)
+            sphi1 = np.sin(phi0)
+
+            #rotation around phi axis
+            Rphi0 = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
+            Rphi1 = np.array(((cphi1, sphi1),(-sphi1, cphi1)))
+            Rglobal = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
+            Rglobal3D = np.array(((1, 0, 0), (0, np.cos(psi0), -np.sin(psi0)), (0, np.sin(psi0), np.cos(psi0))))
+
+            #update phase function
+            def update(x,y,z):
+
+                for i in range (0,anzTransducer):
+                    dist=math.sqrt((transPos[0][i]-x)*(transPos[0][i]-x) + (transPos[1][i]-y)*(transPos[1][i]-y) + (transPos[2][i]-z)*(transPos[2][i]-z))
+                    phaseFocal=2*pi*(dist % wavelength)/wavelength
+
+
+            #upper half
+                    if transPos[2][i] > 0:
+            #vertical twin trap
+                        phase[convertTransducerPosition[i]]=phaseFocal+mainshift
+
+            #stabilising torque (rotation around vertical axis)
+                        if transPos[0][i] < 0:
+                            phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]
+                        else:
+                            phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]+secondshift
+
+            #lower half
+                    else:
+                        phase[convertTransducerPosition[i]] = phaseFocal
+
+            #send phase and duty to FPGA
+
+                for i in range(0,anzTransducer):
+            #choose the correction vector and calculate the phase in range [0 .. 719]
+                    if i < 36:
+                        phaseTot = round(((phase[i] + wiresShiftCorrection1[i]*pi) % (2*pi))/(2*pi)*720) % 720
+                    else:
+                        phaseTot = round(((phase[i] + wiresShiftCorrection2[i-36]*pi) % (2*pi))/(2*pi)*720) % 720
+
+            #calculate the duty cycle in range [0 .. 59]
+                    dutyTot = 0
+
+            #generate the two bytes
+                    phaseByte = bytes(int(phaseTot  % 256).to_bytes(1,'big'))
+                    dutyByte = bytes(int((dutyTot * 4 + math.floor((phaseTot/256)))).to_bytes(1,'big'))
+            #send the bytes
+                    serialObject.write(dutyByte)
+                    serialObject.write(phaseByte)
+
+            def reset():
+
+                res = 255
+                serialObject.write(bytes(res.to_bytes(1,'big')))
+                serialObject.write(bytes(res.to_bytes(1,'big')))
 
             #default settings
             pi=3.14159
@@ -2165,15 +2244,32 @@ class objectDetection():
             #transfer vector from the number of the transducer position to the number of the PCB output
             convertTransducerPosition = np.array([30,31,32,33,34,35,18,19,20,21,22,23,24,25,26,27,28,29,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,71,70,69,68,67,66,65,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36])
             phase = np.zeros(anzTransducer)
+            reset()
+            update(0,0,0)
+
 
             #controller initialization
-            P = 0.5
-            I = 1.5
-            D = 0.3
+            global targetPosX
+            global targetPosY
+            global targetPosZ
+            Px = 0.5
+            Ix = 1.5
+            Dx = 0.3
+            Py = 0.5
+            Iy = 1.5
+            Dy = 0.3
+            Pz = 0.5
+            Iz = 1.5
+            Dz = 0.3
+            posX = 0
+            posY = 0
             posZ = 0
-            initPIDParams(posZ,P,I,D)
+            targetPosX = 0
+            targetPosY = 0
+            targetPosZ = 0
+            initPIDParams3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz)
             time.sleep(0.1)
-            createConfigPID()
+            createConfigPID3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz)
             time.sleep(0.1)
             try:
                 dataByte1, dataByte2, dataByte3 = defaultLookUp()
@@ -2448,38 +2544,18 @@ class objectDetection():
                     cv2.line(frameCropped10, (int(deltaWidth0-50), int(deltaHeight0)), (int(deltaWidth0+50), int(deltaHeight0)),(255, 0, 255), 4) #x1,y1,x2,y2
                     cv2.line(frameCropped10, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
 
-                #geometric properties
-                psi0 = 45*(2*math.pi/360)
-                psi1 = 45*(2*math.pi/360)
-                phi0 = 15.25*(2*math.pi/360)
-                phi1 = 8.25*(2*math.pi/360)
-                theta0 = 17*(2*math.pi/360)
-                theta1 = 17*(2*math.pi/360)
 
 
 # =============================================================================
 # XYZ Coordinates using rot.matrix and angle of attack phi to generate 90 degrees rotated cameras
 # =============================================================================
-                cphi0 = np.cos(phi0)
-                sphi0 = np.sin(phi0)
-                cphi1 = np.cos(phi0)
-                sphi1 = np.sin(phi0)
 
-                #rotation around phi axis
-                Rphi0 = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
-                Rphi1 = np.array(((cphi1, sphi1),(-sphi1, cphi1)))
                 vphi0 = np.array((PixCoordX0, PixCoordY0))
                 vphi1 = np.array((PixCoordX1, PixCoordY1))
                 vphi0 = vphi0.dot(Rphi0) #
                 vphi1 = vphi1.dot(Rphi1)
                 print("V0",vphi0)
                 print("V1",vphi1)
-
-                Rglobal = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
-                Rglobal3D = np.array(((1, 0, 0), (0, np.cos(psi0), -np.sin(psi0)), (0, np.sin(psi0), np.cos(psi0))))
-
-                vpsi0 = np.array
-
 
                 xTriLocal = (vphi0[0]+vphi1[0])/2
                 yTriLocal = vphi0[1]
@@ -2488,7 +2564,6 @@ class objectDetection():
                 vGlobal = np.array((xTriLocal, yTriLocal, zTriLocal))
                 vGlobal = vGlobal.dot(Rglobal3D)
 
-
                 xTri = vGlobal[0]
                 zTri = vGlobal[1]
                 yTri = vGlobal[2]
@@ -2496,6 +2571,11 @@ class objectDetection():
                 print('X',xTri)
                 print('Y',yTri)
                 print('Z',zTri)
+
+                #transformation from px to mm
+                xTrimm = xTri*(tempObjDiaReal/tempObjDiaPx)
+                yTrimm = yTri*(tempObjDiaReal/tempObjDiaPx)
+                zTrimm = zTri*(tempObjDiaReal/tempObjDiaPx)
 
                 # show the frame to our screen
 #                rotated=cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
@@ -2506,16 +2586,16 @@ class objectDetection():
                 key = cv2.waitKey(1) & 0xFF
 
                 if self.PIDIncl == 1:
-                    pid = readConfigPID()
-                    pid.SetPoint = float(spinBoxVal)
-                    pid.setSampleTime(0.001)
-                    pid.setKp(1.1) #default: 3.1
-                    pid.setKi(200) #default: 89.7
-                    pid.setKd(0.025) #default: 0.025
+                    pidX, pidY, pidZ = readConfigPID3D()
+                    pidX.SetPoint = float(spinBoxValX)
+                    pidX.setSampleTime(0.001)
+                    pidX.setKpx(1.1) #default: 3.1
+                    pidX.setKix(200) #default: 89.7
+                    pidX.setKdx(0.025) #default: 0.025
 #                    pid.update(PixCoordY)
-                    pid.update(zTri)
-                    pidOutputVal = float(pid.output)
-                    print("PID output",pid.output)
+                    pidX.updatex(xTri)
+                    pidOutputVal = float(pidX.outputx)
+                    print("PID output",pidX.outputx)
 
                 else:
                     pidOutputVal = np.nan
@@ -2533,43 +2613,53 @@ class objectDetection():
 #                except:
 #                    spinBoxVal = 0 #in mm
 
-#open-loop control adjusted via the user interface
-                objZPosX = setObjPosX(self, spinBoxVal)
-                print("Obj Z position value: ",objZPosX)
-                if (objZPosX >= 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(objZPosX)]
-                    byte2 = dataByte2[int(objZPosX)]
-                    byte3 = dataByte3[int(objZPosX)]
-                    values = bytearray([byte1, byte2, byte3])
-                    serialObject.write(values)
-                    print("Serial Values: ",byte1)
-                elif (objZPos < 0 and self.PIDIncl == 0):
-                    byte1 = dataByte1[int(720 + objZPosX)]
-                    byte2 = dataByte2[int(720 + objZPosX)]
-                    byte3 = dataByte3[int(720 + objZPosX)]
-                    values = bytearray([byte1, byte2, byte3])
-                    serialObject.write(values)
-                    print("Serial Values: ",byte1)
+                #open-loop control adjusted via the user interface
+                valueX = setObjPosX(self, spinBoxValX)
+                valueY = setObjPosY(self, spinBoxValY)
+                valueZ = setObjPosZ(self, spinBoxValZ)
+
+                objZPosCLX = (pidOutputVal/20)
+
+                update(valueX/100, valueY/100, valueZ/100)
+
+
+
+#                objZPosX = setObjPosX(self, spinBoxVal)
+#                print("Obj Z position value: ",objZPosX)
+#                if (objZPosX >= 0 and self.PIDIncl == 0):
+#                    byte1 = dataByte1[int(objZPosX)]
+#                    byte2 = dataByte2[int(objZPosX)]
+#                    byte3 = dataByte3[int(objZPosX)]
+#                    values = bytearray([byte1, byte2, byte3])
+#                    serialObject.write(values)
+#                    print("Serial Values: ",byte1)
+#                elif (objZPos < 0 and self.PIDIncl == 0):
+#                    byte1 = dataByte1[int(720 + objZPosX)]
+#                    byte2 = dataByte2[int(720 + objZPosX)]
+#                    byte3 = dataByte3[int(720 + objZPosX)]
+#                    values = bytearray([byte1, byte2, byte3])
+#                    serialObject.write(values)
+#                    print("Serial Values: ",byte1)
 
 
 #                #closed-loop control adjusted via the user interface
-                if (pidOutputVal <= 0 and self.PIDIncl == 1):
-                    objZPosCLX = (pidOutputVal/20)
-                    byte1 = dataByte1[int(719 + objZPosCLX)]
-                    byte2 = dataByte2[int(719 + objZPosCLX)]
-                    byte3 = dataByte3[int(719 + objZPosCLX)]
-                    values = bytearray([byte1, byte2, byte3])
-                    serialObject.write(values)
-                    print("Serial Values: ",byte1)
-
-                elif (pidOutputVal > 0 and self.PIDIncl == 1):
-                    objZPosCL = (pidOutputVal/20)
-                    byte1 = dataByte1[int(objZPosCLX+objZPosX)]
-                    byte2 = dataByte2[int(objZPosCLX+objZPosX)]
-                    byte3 = dataByte3[int(objZPosCLX+objZPosX)]
-                    values = bytearray([byte1, byte2, byte3])
-                    serialObject.write(values)
-                    print("Serial Values: ",byte1)
+#                if (pidOutputVal <= 0 and self.PIDIncl == 1):
+#                    objZPosCLX = (pidOutputVal/20)
+#                    byte1 = dataByte1[int(719 + objZPosCLX)]
+#                    byte2 = dataByte2[int(719 + objZPosCLX)]
+#                    byte3 = dataByte3[int(719 + objZPosCLX)]
+#                    values = bytearray([byte1, byte2, byte3])
+#                    serialObject.write(values)
+#                    print("Serial Values: ",byte1)
+#
+#                elif (pidOutputVal > 0 and self.PIDIncl == 1):
+#                    objZPosCL = (pidOutputVal/20)
+#                    byte1 = dataByte1[int(objZPosCLX+objZPosX)]
+#                    byte2 = dataByte2[int(objZPosCLX+objZPosX)]
+#                    byte3 = dataByte3[int(objZPosCLX+objZPosX)]
+#                    values = bytearray([byte1, byte2, byte3])
+#                    serialObject.write(values)
+#                    print("Serial Values: ",byte1)
 
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
@@ -2595,7 +2685,7 @@ class objectDetection():
 #                print("PID Array length: ",len(pidOutputArray))
 #                print("coordArrayY: ",len(coordArrayY))
 #                print("Time array: ",len(timeArray))
-                printCoordsGui(self, xTri, yTri, zTri)
+                printCoordsGui(self, xTrimm, yTrimm, zTrimm)
                 window.update()
 
 #                time.sleep(0.5)
@@ -2652,7 +2742,7 @@ class GUI():
 #        self.master = tk.Toplevel(self.master)
 #        self.frame = Frame(self.master)
         self.master.title("TinyLev")
-        self.master.geometry("1000x900+1000+600")
+        self.master.geometry("1100x900+1000+600")
 #        self.master.configure(background ='Gray'
 
 #        selected = tk.IntVar()
@@ -2662,8 +2752,14 @@ class GUI():
 
         self.master.note = tk.N
 
-        varSerial = StringVar(self.master) #default value for serial print
-        varSerial.set("0")
+        varSerialX = StringVar(self.master) #default value for serial print
+        varSerialX.set("0")
+
+        varSerialY = StringVar(self.master) #default value for serial print
+        varSerialY.set("0")
+
+        varSerialZ = StringVar(self.master) #default value for serial print
+        varSerialZ.set("0")
 
         for index, cameraChoice in enumerate(cameraChoice):
                     b = tk.Radiobutton(self.master, text=cameraChoice, variable=self.choice,
@@ -2788,28 +2884,28 @@ class GUI():
         self.b20 = Button(self.master, text="3D-Plot ", command = self.set3DPlot)
         self.b20.grid(column=7,row=10,sticky = tk.W+tk.E,columnspan =1)
 
-        self.setPosFrame = tk.Label(self.master, text="Define Object Position X: ")
-        self.setPosFrame.grid(column=2,row=20,sticky = tk.W+tk.E)
+        self.setPosFrameX = tk.Label(self.master, text="Define Object Position X: ")
+        self.setPosFrameX.grid(column=2,row=20,sticky = tk.W+tk.E)
 
-        self.spinBoxObjPosX = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTempX)
+        self.spinBoxObjPosX = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerialX, command = self.setObjPosTempX)
         self.spinBoxObjPosX.grid(column=7, row= 20,sticky = tk.W+tk.E)
 
         self.b16 = Button(self.master, text="Set Position ", command = self.setObjPosTempX)
         self.b16.grid(column=8,row=20,sticky = tk.W)
 
-        self.setPosFrame = tk.Label(self.master, text="Define Object Position Y: ")
-        self.setPosFrame.grid(column=2,row=21,sticky = tk.W+tk.E)
+        self.setPosFrameY = tk.Label(self.master, text="Define Object Position Y: ")
+        self.setPosFrameY.grid(column=2,row=21,sticky = tk.W+tk.E)
 
-        self.spinBoxObjPosY = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTempY)
+        self.spinBoxObjPosY = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerialY, command = self.setObjPosTempY)
         self.spinBoxObjPosY.grid(column=7, row= 21,sticky = tk.W+tk.E)
 
         self.b21 = Button(self.master, text="Set Position ", command = self.setObjPosTempY)
         self.b21.grid(column=8,row=21,sticky = tk.W)
 
-        self.setPosFrame = tk.Label(self.master, text="Define Object Position Z: ")
-        self.setPosFrame.grid(column=2,row=22,sticky = tk.W+tk.E)
+        self.setPosFrameZ = tk.Label(self.master, text="Define Object Position Z: ")
+        self.setPosFrameZ.grid(column=2,row=22,sticky = tk.W+tk.E)
 
-        self.spinBoxObjPosZ = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerial, command = self.setObjPosTempZ)
+        self.spinBoxObjPosZ = tk.Spinbox(self.master, from_ =-720, to=720,textvariable = varSerialZ, command = self.setObjPosTempZ)
         self.spinBoxObjPosZ.grid(column=7, row= 22,sticky = tk.W+tk.E)
 
         self.b22 = Button(self.master, text="Set Position ", command = self.setObjPosTempZ)

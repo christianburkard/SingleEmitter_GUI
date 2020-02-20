@@ -22,11 +22,17 @@ import serial
 from Library.Functions import *
 from Library.settings import *
 from Library import PID
+from Library import PIDMultiX
+from Library import PIDMultiY
+from Library import PIDMultiZ
 import os.path
 from mpl_toolkits import mplot3d
 
 
+
 def initPIDParams(posZ,P,I,D):
+    #parameter initialization
+    global pid
     global initposZ
     global initP
     global initI
@@ -35,9 +41,51 @@ def initPIDParams(posZ,P,I,D):
     initP = P
     initI = I
     initD = D
-    global pid
+
+
+    #Controller initialization
     pid = PID.PID(initP,initI,initD)
     pid.SetPoint = posZ
+
+
+def initPIDParams3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz):
+    #parameter initialization
+    global pidX
+    global pidY
+    global pidZ
+    global initposX
+    global initposY
+    global initposZ
+    global initPx
+    global initIx
+    global initDx
+    global initPy
+    global initIy
+    global initDy
+    global initPz
+    global initIz
+    global initDz
+    initposX = posX
+    initposY = posY
+    initposZ = posZ
+    initPx = Px
+    initIx = Ix
+    initDx = Dx
+    initPy = Py
+    initIy = Iy
+    initDy = Dy
+    initPz = Pz
+    initIz = Iz
+    initDz = Dz
+
+
+    #Controller initialization
+    pidX = PIDMultiX.PIDX(initPx,initIx,initDx)
+    pidY = PIDMultiY.PIDY(initPy,initIy,initDy)
+    pidZ = PIDMultiZ.PIDZ(initPz,initIz,initDz)
+    pidX.SetPointx = posX
+    pidY.SetPointy = posY
+    pidZ.SetPointz = posZ
 #    pid.sample_time(0.001)
 
 
@@ -53,11 +101,44 @@ def readConfigPID():
         print("Config file loaded ...")
         return pid
 
-def createConfigPID():
+
+def readConfigPID3D():
+
+    with open('./Data/pid3D.conf','r') as f:
+        config = f.readline().split(',')
+        pidX.SetPointx = float(config[0])
+        pidY.SetPointy = float(config[1])
+        pidZ.SetPointz = float(config[2])
+
+        targetPosX = pidX.SetPointx
+        targetPosY = pidY.SetPointy
+        targetPosZ = pidZ.SetPointz
+
+        pidX.setKpx (float(config[3]))
+        pidX.setKix (float(config[4]))
+        pidX.setKdx (float(config[5]))
+        pidY.setKpy (float(config[6]))
+        pidY.setKiy (float(config[7]))
+        pidY.setKdy (float(config[8]))
+        pidZ.setKpz (float(config[9]))
+        pidZ.setKiz (float(config[10]))
+        pidZ.setKdz (float(config[11]))
+        print("Config file loaded ...")
+        return pidX, pidY, pidZ
+
+
+def createConfigPID(PosZ,initP,initI,initD):
     if not os.path.isfile('./Data/pid.conf'):
         with open('./Data/pid.conf','w') as f:
-            f.write('%s,%s,%s,%s'%(targetPosZ,initP,initI,initD))
+            f.write('%s,%s,%s,%s'%(PosZ,initP,initI,initD))
+    print('Config file written ...')
 
+
+def createConfigPID3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz):
+    if not os.path.isfile('./Data/pid3D.conf'):
+        with open('./Data/pid3D.conf','w') as f:
+            f.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s'%(posX, posY, posZ,Px,Ix,Dx,Py,Iy,Dy,Pz,Iz,Dz))
+    print('3D Config file written ...')
 
 #function prints out serial bytes on console
 def funcOpenLoop(listValue):
@@ -607,3 +688,55 @@ def show3DPlot():
     ax.set_xlabel('X-Coordinate')
     ax.set_ylabel('Y_Coordinate')
     ax.set_zlabel('Z-Coordinate');
+
+
+
+
+#update phase function
+def update(x,y,z):
+
+    for i in range (0,anzTransducer):
+        dist=math.sqrt((transPos[0][i]-x)*(transPos[0][i]-x) + (transPos[1][i]-y)*(transPos[1][i]-y) + (transPos[2][i]-z)*(transPos[2][i]-z))
+        phaseFocal=2*pi*(dist % wavelength)/wavelength
+
+
+#upper half
+        if transPos[2][i] > 0:
+#vertical twin trap
+            phase[convertTransducerPosition[i]]=phaseFocal+mainshift
+
+#stabilising torque (rotation around vertical axis)
+            if transPos[0][i] < 0:
+                phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]
+            else:
+                phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]+secondshift
+
+#lower half
+        else:
+            phase[convertTransducerPosition[i]] = phaseFocal
+
+
+#send phase and duty to FPGA
+
+    for i in range(0,anzTransducer):
+#choose the correction vector and calculate the phase in range [0 .. 719]
+        if i < 36:
+            phaseTot = round(((phase[i] + wiresShiftCorrection1[i]*pi) % (2*pi))/(2*pi)*720) % 720
+        else:
+            phaseTot = round(((phase[i] + wiresShiftCorrection2[i-36]*pi) % (2*pi))/(2*pi)*720) % 720
+
+#calculate the duty cycle in range [0 .. 59]
+        dutyTot = 0
+
+#generate the two bytes
+        phaseByte = bytes(int(phaseTot  % 256).to_bytes(1,'big'))
+        dutyByte = bytes(int((dutyTot * 4 + math.floor((phaseTot/256)))).to_bytes(1,'big'))
+#send the bytes
+        serialObject.write(dutyByte)
+        serialObject.write(phaseByte)
+
+def reset():
+
+    res = 255
+    serialObject.write(bytes(res.to_bytes(1,'big')))
+    serialObject.write(bytes(res.to_bytes(1,'big')))
