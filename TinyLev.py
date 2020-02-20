@@ -2162,20 +2162,20 @@ class objectDetection():
             #geometrical initialization
             psi0 = 45*(2*math.pi/360)
             psi1 = 45*(2*math.pi/360)
-            phi0 = 15.25*(2*math.pi/360)
-            phi1 = 8.25*(2*math.pi/360)
-            theta0 = 17*(2*math.pi/360)
-            theta1 = 17*(2*math.pi/360)
+            phi0 = 10.0*(2*math.pi/360)
+            phi1 = 10.0*(2*math.pi/360)
+            theta0 = 10*(2*math.pi/360)
+            theta1 = 10*(2*math.pi/360)
             cphi0 = np.cos(phi0)
             sphi0 = np.sin(phi0)
             cphi1 = np.cos(phi0)
             sphi1 = np.sin(phi0)
 
             #rotation around phi axis
-            Rphi0 = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
-            Rphi1 = np.array(((cphi1, sphi1),(-sphi1, cphi1)))
+            Rphi0 = np.array(((cphi0, sphi0),(-sphi0, cphi0))) #rotation of camera around own axis to get 90 degrees relative angle
+            Rphi1 = np.array(((cphi1, -sphi1),(sphi1, cphi1)))
             Rglobal = np.array(((cphi0, -sphi0),(sphi0, cphi0)))
-            Rglobal3D = np.array(((1, 0, 0), (0, np.cos(psi0), -np.sin(psi0)), (0, np.sin(psi0), np.cos(psi0))))
+            Rglobal3D = np.array(((np.cos(psi0), -np.sin(psi0), 0), (np.sin(psi0), np.cos(psi0), 0), (0, 0, 1))) #rotation around z axis for global coordinate system
 
             #update phase function
             def update(x,y,z):
@@ -2543,16 +2543,18 @@ class objectDetection():
                 print("V0",vphi0)
                 print("V1",vphi1)
 
-                xTriLocal = (vphi0[0]+vphi1[0])/2
-                yTriLocal = vphi0[1]
-                zTriLocal = vphi1[1]
+                #coordinate transformation for local coordinaten system cam0 and cam1
+                xTriLocal = vphi1[0]
+                yTriLocal = vphi0[0]
+                zTriLocal = (vphi0[1] + vphi1[1])/2
 
                 vGlobal = np.array((xTriLocal, yTriLocal, zTriLocal))
                 vGlobal = vGlobal.dot(Rglobal3D)
 
                 xTri = vGlobal[0]
-                zTri = vGlobal[1]
-                yTri = vGlobal[2]
+                yTri = vGlobal[1]
+                zTri = vGlobal[2]
+
 
                 print('X',xTri)
                 print('Y',yTri)
@@ -2613,12 +2615,12 @@ class objectDetection():
                     valueX = pidOutputValX
                     valueY = pidOutputValY
                     valueZ = pidOutputValZ
-                    update(valueX/100, valueY/100, valueZ/100)
+                    update(valueX/84, valueY/84, valueZ/84)
                 else:
                     pidOutputValX = np.nan
                     pidOutputValY = np.nan
                     pidOutputValZ = np.nan
-                    update(valueX/100, valueY/100, valueZ/100)
+                    update(valueX/84, valueY/84, valueZ/84)
 
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
