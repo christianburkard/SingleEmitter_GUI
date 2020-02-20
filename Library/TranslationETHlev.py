@@ -92,9 +92,9 @@ reset()
 update(0,0,0)
 start=time.time()
 for i in range(0,1000):
-    update(i/100, i/100, i/100)
+    update(0, 0, i/200)
 for i in range(0,1000):
-    update((999-i)/100 ,(999-i)/100, (999-i)/100)
+    update(0 ,0, (999-i)/200)
 end=time.time()
 print(end-start)
 serialObject.close()

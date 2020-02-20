@@ -2308,8 +2308,7 @@ class objectDetection():
             deltaHeight0 = 100
             deltaWidth1 = deltaWidth0
             deltaHeight1 = deltaHeight0
-#                height0, width0, channels = frameCropped0.
-#                height1, width1, channels = frame1.shape
+
 # =============================================================================
 #            Camera parameters
 # =============================================================================
@@ -2411,8 +2410,7 @@ class objectDetection():
                 # (x, y) center of the object
                 cnts0 = cv2.findContours(mask30.copy(), cv2.RETR_EXTERNAL,
                     cv2.CHAIN_APPROX_SIMPLE)
-#                cnts1 = cv2.findContours(mask31.copy(), cv2.RETR_EXTERNAL,
-#                    cv2.CHAIN_APPROX_SIMPLE)
+
                 cnts0 = imutils.grab_contours(cnts0)
 #                cnts1 = imutils.grab_contours(cnts1)
                 center0 = None
@@ -2444,7 +2442,6 @@ class objectDetection():
                         radius0 = np.nan
                     # only proceed if the radius meets a minimum size
                     if (radius0 > 20 and radius0 < 150):
-#                    if (radius0 > 0):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
                         cv2.circle(frameCropped00, (int(center0[0]), int(center0[1])), int(radius0), (15, 186, 2), 10)
@@ -2494,18 +2491,15 @@ class objectDetection():
                         radius1 = np.nan
                     # only proceed if the radius meets a minimum size
                     if (radius1 > 20 and radius1 < 150):
-#                    if (radius > 0):
                         # draw the circle and centroid on the frame,
                         # then update the list of tracked points
 
                         cv2.circle(frameCropped10, (center1[0], center1[1]), int(radius1), (15, 186, 2), 10)
-#                        cv2.circle(frameCropped00, center0, 5, (0, 0, 255), -1)
                         cv2.circle(frameCropped10, center1, 5, (0, 0, 255), -1)
 
                 # update the points queue
                     try:
                         print("Contour radius: {:.2f}".format(radius1))
-#                        PixRadius0 = radius0
                         PixRadius1 = radius1
 
                     except:
@@ -2518,8 +2512,7 @@ class objectDetection():
                     PixCoordY1 = np.nan
                     radius1 = np.nan
                     PixRadius1 = radius1
-#                    print("PiX coordinate {:.2f}".format(PixCoordX), "  PiY coordinate: {:.2f}".format(PixCoordY))
-#                    print("Contour radius: {:.2f}".format(radius))
+
                     print("No object detected ...")
                 # loop over the set of tracked points
                 for i in range(1, len(pts)):
@@ -2528,15 +2521,8 @@ class objectDetection():
                     if pts[i - 1] is None or pts[i] is None:
                         continue
 
-                    # show mask images
-#                cv2.imshow('HSV', mask1)
-#                cv2.imshow('Erode', mask2)
-#                cv2.imshow('Dilate', mask3)
-#                cv2.imshow("Median Filter", mask4)
                 if self.reticleIncl == 1:
-#                    height, width, channels = frame.shape
-#                    frameCropped0 = frameCropped0.copy()
-#                    frameCropped1 = frameCropped1.copy()
+
                     cv2.circle(frameCropped00, (int(deltaWidth0), int(deltaHeight0)), 10, (255, 0, 0), -1)
                     cv2.line(frameCropped00, (int(deltaWidth0-50), int(deltaHeight0)), (int(deltaWidth0+50), int(deltaHeight0)),(255, 0, 255), 4) #x1,y1,x2,y2
                     cv2.line(frameCropped00, (int(deltaWidth0), int(deltaHeight0-50)), (int(deltaWidth0), int(deltaHeight0+50)),(255, 0, 255), 4) #x1,y1,x2,y2
@@ -2585,22 +2571,55 @@ class objectDetection():
                 cv2.imshow("Mask31", mask31)
                 key = cv2.waitKey(1) & 0xFF
 
+
+                #open-loop control adjusted via the user interface
+                valueX = setObjPosX(self, spinBoxValX)
+                valueY = setObjPosY(self, spinBoxValY)
+                valueZ = setObjPosZ(self, spinBoxValZ)
+
                 if self.PIDIncl == 1:
+                    #read in controller parameters
                     pidX, pidY, pidZ = readConfigPID3D()
+                    #controller for x-axis
                     pidX.SetPoint = float(spinBoxValX)
                     pidX.setSampleTime(0.001)
                     pidX.setKpx(1.1) #default: 3.1
                     pidX.setKix(200) #default: 89.7
                     pidX.setKdx(0.025) #default: 0.025
-#                    pid.update(PixCoordY)
-                    pidX.updatex(xTri)
-                    pidOutputVal = float(pidX.outputx)
-                    print("PID output",pidX.outputx)
+                    pidX.updatex(xTrimm)
+                    pidOutputValX = float(pidX.outputx)
+                    print("PID output X",pidX.outputx)
 
+                    #controller for y-axis
+                    pidY.SetPoint = float(spinBoxValY)
+                    pidY.setSampleTime(0.001)
+                    pidY.setKpx(1.1) #default: 3.1
+                    pidY.setKix(200) #default: 89.7
+                    pidY.setKdx(0.025) #default: 0.025
+                    pidY.updatex(yTrimm)
+                    pidOutputValY = float(pidY.outputy)
+                    print("PID output Y",pidY.outputy)
+
+                    #controller for x-axis
+                    pidZ.SetPoint = float(spinBoxValZ)
+                    pidZ.setSampleTime(0.001)
+                    pidZ.setKpx(1.1) #default: 3.1
+                    pidZ.setKix(200) #default: 89.7
+                    pidZ.setKdx(0.025) #default: 0.025
+                    pidZ.updatex(zTrimm)
+                    pidOutputValZ = float(pidZ.outputz)
+                    print("PID output Z",pidZ.outputz)
+
+                    valueX = pidOutputValX
+                    valueY = pidOutputValY
+                    valueZ = pidOutputValZ
+                    update(valueX/100, valueY/100, valueZ/100)
                 else:
-                    pidOutputVal = np.nan
+                    pidOutputValX = np.nan
+                    pidOutputValY = np.nan
+                    pidOutputValZ = np.nan
+                    update(valueX/100, valueY/100, valueZ/100)
 
-#                print("PID output: ",pid.output)
                 # if the 'q' key is pressed, stop the loop
                 if key == ord("r"):
     #                cmdStopTimer()
@@ -2608,66 +2627,13 @@ class objectDetection():
                 elif selectedStopAll == 1:
                     break
 
-#                try:
-#                    spinBoxVal = int(spinBoxVal)
-#                except:
-#                    spinBoxVal = 0 #in mm
-
-                #open-loop control adjusted via the user interface
-                valueX = setObjPosX(self, spinBoxValX)
-                valueY = setObjPosY(self, spinBoxValY)
-                valueZ = setObjPosZ(self, spinBoxValZ)
-
-                objZPosCLX = (pidOutputVal/20)
-
-                update(valueX/100, valueY/100, valueZ/100)
-
-
-
-#                objZPosX = setObjPosX(self, spinBoxVal)
-#                print("Obj Z position value: ",objZPosX)
-#                if (objZPosX >= 0 and self.PIDIncl == 0):
-#                    byte1 = dataByte1[int(objZPosX)]
-#                    byte2 = dataByte2[int(objZPosX)]
-#                    byte3 = dataByte3[int(objZPosX)]
-#                    values = bytearray([byte1, byte2, byte3])
-#                    serialObject.write(values)
-#                    print("Serial Values: ",byte1)
-#                elif (objZPos < 0 and self.PIDIncl == 0):
-#                    byte1 = dataByte1[int(720 + objZPosX)]
-#                    byte2 = dataByte2[int(720 + objZPosX)]
-#                    byte3 = dataByte3[int(720 + objZPosX)]
-#                    values = bytearray([byte1, byte2, byte3])
-#                    serialObject.write(values)
-#                    print("Serial Values: ",byte1)
-
-
-#                #closed-loop control adjusted via the user interface
-#                if (pidOutputVal <= 0 and self.PIDIncl == 1):
-#                    objZPosCLX = (pidOutputVal/20)
-#                    byte1 = dataByte1[int(719 + objZPosCLX)]
-#                    byte2 = dataByte2[int(719 + objZPosCLX)]
-#                    byte3 = dataByte3[int(719 + objZPosCLX)]
-#                    values = bytearray([byte1, byte2, byte3])
-#                    serialObject.write(values)
-#                    print("Serial Values: ",byte1)
-#
-#                elif (pidOutputVal > 0 and self.PIDIncl == 1):
-#                    objZPosCL = (pidOutputVal/20)
-#                    byte1 = dataByte1[int(objZPosCLX+objZPosX)]
-#                    byte2 = dataByte2[int(objZPosCLX+objZPosX)]
-#                    byte3 = dataByte3[int(objZPosCLX+objZPosX)]
-#                    values = bytearray([byte1, byte2, byte3])
-#                    serialObject.write(values)
-#                    print("Serial Values: ",byte1)
-
                 frameCounter = framenum + 1
                 tempFrames = np.append(tempFrames,frameCounter)
                 try:
                     tempPartDiaPixels = np.append(tempPartDiaPixels,pixDiameter0)
                 except:
                     None
-                pidOutputArray = np.append(pidOutputArray,pidOutputVal)
+                pidOutputArray = np.append(pidOutputArray,pidOutputValX)
                 coordArrayX0 = np.append(coordArrayX0,abs(PixCoordX0))
                 coordArrayY0 = np.append(coordArrayY0,abs(PixCoordY0))
                 radiusArray0 = np.append(radiusArray0,abs(PixRadius0))
@@ -2681,10 +2647,7 @@ class objectDetection():
                 # update counter
                 framenum = framenum + 1
                 print("Framenumber: ",framenum)
-#
-#                print("PID Array length: ",len(pidOutputArray))
-#                print("coordArrayY: ",len(coordArrayY))
-#                print("Time array: ",len(timeArray))
+
                 printCoordsGui(self, xTrimm, yTrimm, zTrimm)
                 window.update()
 
