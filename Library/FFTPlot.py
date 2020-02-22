@@ -18,6 +18,7 @@ import pandas as pd
 import csv
 
 
+
 def showFFT():
 #    caseText = input("Enter approx frames per second: ")
 #    approxFPS = int(caseText)
@@ -52,7 +53,6 @@ def showFFT():
     yLength1 = 10.0/sigLen*np.abs(rfft[10:sigLen//2])
     yLength2 = 10.0/sigLen*np.abs(zfft[10:sigLen//2])
 
-    fig = plt.figure('FFT')
     plt.subplot(2, 1, 1)
     plt.plot(freqSamp, 10.0/sigLen*np.abs(rfft[0:sigLen//2]), 'k', color = 'black')
 #    plt.title('Position vs time. Sampling frequency: ',freqSamp)

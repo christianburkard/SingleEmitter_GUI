@@ -24,9 +24,9 @@ def start3dCalibration():
     image_size = (img_width,img_height)
 
     # Chessboard parameters
-    rows = 6 #default 6
-    columns = 9 #default 9
-    square_size = 3
+    rows = 6
+    columns = 9
+    square_size = 2.5
 
 
     calibrator = StereoCalibrator(rows, columns, square_size, image_size)
@@ -58,15 +58,15 @@ def start3dCalibration():
 
     print ('Starting calibration... It can take several minutes!')
     calibration = calibrator.calibrate_cameras()
-    calibration.export('./Data/calibData3D')
+    calibration.export('calibData')
     print ('Calibration complete!')
 
 
     # Lets rectify and show last pair after  calibration
-    calibration = StereoCalibration(input_folder='./Data/calibData3D/')
+    calibration = StereoCalibration(input_folder='calibData')
     rectified_pair = calibration.rectify((imgLeft, imgRight))
 
-    cv2.imshow('lower CALIBRATED', rectified_pair[0])
-    cv2.imshow('Upper CALIBRATED', rectified_pair[1])
-    cv2.imwrite("rectifyed_lower.jpg",rectified_pair[0])
-    cv2.imwrite("rectifyed_upper.jpg",rectified_pair[1])
+    cv2.imshow('Left CALIBRATED', rectified_pair[0])
+    cv2.imshow('Right CALIBRATED', rectified_pair[1])
+    cv2.imwrite("rectifyed_left.jpg",rectified_pair[0])
+    cv2.imwrite("rectifyed_right.jpg",rectified_pair[1])

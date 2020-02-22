@@ -22,17 +22,10 @@ import serial
 from Library.Functions import *
 from Library.settings import *
 from Library import PID
-from Library import PIDMultiX
-from Library import PIDMultiY
-from Library import PIDMultiZ
 import os.path
-from mpl_toolkits import mplot3d
-
 
 
 def initPIDParams(posZ,P,I,D):
-    #parameter initialization
-    global pid
     global initposZ
     global initP
     global initI
@@ -41,51 +34,9 @@ def initPIDParams(posZ,P,I,D):
     initP = P
     initI = I
     initD = D
-
-
-    #Controller initialization
+    global pid
     pid = PID.PID(initP,initI,initD)
     pid.SetPoint = posZ
-
-
-def initPIDParams3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz):
-    #parameter initialization
-    global pidX
-    global pidY
-    global pidZ
-    global initposX
-    global initposY
-    global initposZ
-    global initPx
-    global initIx
-    global initDx
-    global initPy
-    global initIy
-    global initDy
-    global initPz
-    global initIz
-    global initDz
-    initposX = posX
-    initposY = posY
-    initposZ = posZ
-    initPx = Px
-    initIx = Ix
-    initDx = Dx
-    initPy = Py
-    initIy = Iy
-    initDy = Dy
-    initPz = Pz
-    initIz = Iz
-    initDz = Dz
-
-
-    #Controller initialization
-    pidX = PIDMultiX.PIDX(initPx,initIx,initDx)
-    pidY = PIDMultiY.PIDY(initPy,initIy,initDy)
-    pidZ = PIDMultiZ.PIDZ(initPz,initIz,initDz)
-    pidX.SetPointx = posX
-    pidY.SetPointy = posY
-    pidZ.SetPointz = posZ
 #    pid.sample_time(0.001)
 
 
@@ -101,44 +52,11 @@ def readConfigPID():
         print("Config file loaded ...")
         return pid
 
-
-def readConfigPID3D():
-
-    with open('./Data/pid3D.conf','r') as f:
-        config = f.readline().split(',')
-        pidX.SetPointx = float(config[0])
-        pidY.SetPointy = float(config[1])
-        pidZ.SetPointz = float(config[2])
-
-        targetPosX = pidX.SetPointx
-        targetPosY = pidY.SetPointy
-        targetPosZ = pidZ.SetPointz
-
-        pidX.setKpx (float(config[3]))
-        pidX.setKix (float(config[4]))
-        pidX.setKdx (float(config[5]))
-        pidY.setKpy (float(config[6]))
-        pidY.setKiy (float(config[7]))
-        pidY.setKdy (float(config[8]))
-        pidZ.setKpz (float(config[9]))
-        pidZ.setKiz (float(config[10]))
-        pidZ.setKdz (float(config[11]))
-        print("Config file loaded ...")
-        return pidX, pidY, pidZ
-
-
-def createConfigPID(PosZ,initP,initI,initD):
+def createConfigPID():
     if not os.path.isfile('./Data/pid.conf'):
         with open('./Data/pid.conf','w') as f:
-            f.write('%s,%s,%s,%s'%(PosZ,initP,initI,initD))
-    print('Config file written ...')
+            f.write('%s,%s,%s,%s'%(targetPosZ,initP,initI,initD))
 
-
-def createConfigPID3D(posX, posY, posZ, Px, Ix, Dx, Py, Iy, Dy, Pz, Iz, Dz):
-    if not os.path.isfile('./Data/pid3D.conf'):
-        with open('./Data/pid3D.conf','w') as f:
-            f.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s'%(posX, posY, posZ,Px,Ix,Dx,Py,Iy,Dy,Pz,Iz,Dz))
-    print('3D Config file written ...')
 
 #function prints out serial bytes on console
 def funcOpenLoop(listValue):
@@ -343,24 +261,6 @@ def writePixelPositionPCCam2(timeArray,coordArrayX,coordArrayY,radiusArray,frame
     time.sleep(0.2)
     print("Data written")
 
-def writePixelPosition3D(timeArray,xTri,yTri,zTri,radiusArray0,framenum,fpsVar,PIDIncl):
-    time.sleep(0.2)
-    print("Writing data to file ..")
-#    coordArray = np.array([])
-    #coordArray = np.concatenate((coordArrayX, coordArrayY))
-    data = {'Time' : timeArray,'X Coord' : xTri, 'Y Coord' : yTri, 'Z Coord' : zTri, 'Radius' : radiusArray0, 'Framenumber' : framenum, 'FPS' : fpsVar}
-#    data = [timeArray, coordArrayX, coordArrayY, radiusArray]
-    df1 = pd.DataFrame(data)
-    df1.replace('',np.nan, inplace = True)
-    timeActual = time.strftime("%d%m%y-%H%M%S")
-    if PIDIncl == 0:
-        df1.to_csv("./Logging/OrbitCoordinates_3D_OpenLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
-    elif PIDIncl == 1:
-        df1.to_csv("./Logging/OrbitCoordinates_3D_ClosedLoop_" + timeActual + ".csv", na_rep = np.nan,index=False)
-    #np.savetxt('H:/03_Software/Python/IncreaseFPSPicamera/Logging/OrbitCoordinatesPixel.csv', [coordArray], fmt = '%d',delimiter = ',')
-    time.sleep(0.2)
-    print("Data written")
-
 
 def writePIDOutput(timeArray,coordArrayY,pidOutputArray):
     time.sleep(0.2)
@@ -397,7 +297,7 @@ def showRadiusvsFrame():
 
     timeinit = data[1,0]
     timeArray = (data[:, 0] - data[0,0])
-    fig = plt.figure('Radius vs. Frame Number')
+
     plt.subplot(2,1,1)
     plt.plot(frameinit,radiusdistr , '-ok', color = 'black')
     plt.title("Radius Distribution")
@@ -469,48 +369,34 @@ def showPosvsTime():
         dtime[i+1] = timeinit[i+1] - timeinit[i]
         tottime = np.append(dtime[i],tottime+dtime[i])
     meandRad = sum(2*data[:-1,3])/len(data[:,1])
-    xCalib = (data[:-1, 1])*(-1)
-    zReal = (data[:-1,3])
+    zCalib = (data[:-1, 2])*(-1)
+    zReal = (data[:-1,1])
     zReal = zReal/meandRad
 
-    xReal = (data[:-1,1])*(-1)
+    xReal = (data[:-1,2])*(-1)
     xReal = xReal/meandRad
 
-    yReal = (data[:-1,2])
-    yReal = yReal/meandRad
 
-    fig = plt.figure('Position vs. Time')
-    plt.subplot(6, 1, 1)
-    plt.plot(tottime, data[:-1, 3], '-ok', color = 'black')
+    plt.subplot(4, 1, 1)
+    plt.plot(tottime, data[:-1, 1], '-ok', color = 'black')
     plt.title('Position vs time')
     plt.ylabel('Z-Coordinate / px')
 
 
-    plt.subplot(6, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(tottime, zReal, '-ok', color = 'black')
     plt.ylabel('Z-Coordinate / mm')
 
 
-    plt.subplot(6, 1, 3)
-    plt.plot(tottime, xCalib, '-ok', color = 'black')
+    plt.subplot(4, 1, 3)
+    plt.plot(tottime, zCalib, '-ok', color = 'black')
     plt.xlabel('Time t / s')
-    plt.ylabel('X-Coordinate / px')
+    plt.ylabel('R-Coordinate / px')
 
-    plt.subplot(6, 1, 4)
+    plt.subplot(4, 1, 4)
     plt.plot(tottime, xReal, '-ok', color = 'black')
     plt.xlabel('Time t / s')
-    plt.ylabel('X-Coordinate / mm')
-
-    if headers[2] == str('Y Coord'):
-        plt.subplot(6, 1, 5)
-        plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
-        plt.xlabel('Time t / s')
-        plt.ylabel('Y-Coordinate / px')
-
-        plt.subplot(6, 1, 6)
-        plt.plot(tottime, yReal, '-ok', color = 'black')
-        plt.xlabel('Time t / s')
-        plt.ylabel('Y-Coordinate / mm')
+    plt.ylabel('R-Coordinate / mm')
 
 #    # Plot the data
 #    plt.plot(tottime, data[:-1, 2], '-ok', color = 'black')
@@ -537,7 +423,6 @@ def showOrbit():
         data = np.array(data).astype(float)
 
     # Plot the data
-    fig = plt.figure('2D - Orbit')
     plt.plot(data[:, 2], data[:, 1], '-ok', color = 'black')
     plt.title("Orbital Pixel Positions Open-Loop")
     plt.axis('equal')
@@ -640,7 +525,7 @@ def showPIDPlot():
     time = data[:,0]
     zPos = data[:-1,1]
     pidOutput = data[:-1,2]
-    fig = plt.figure('PID Output')
+
     plt.subplot(2, 1, 1)
     plt.plot(tottime, zPos, 'k', color = 'black')
 #    plt.title('Position vs time. Sampling frequency: ',freqSamp)
@@ -654,89 +539,3 @@ def showPIDPlot():
     locs, labels = plt.xticks()
 
     print("PID output plotting done")
-
-def show3DPlot():
-
-    print("Plotting 3D curve ...")
-    file = filedialog.askopenfilename(initialdir = './Logging')
-
-    with open(file, 'r') as f:
-        reader = csv.reader(f, delimiter=',')
-        # get header from first row
-        headers = next(reader)
-        # get all the rows as a list
-        data = list(reader)
-        # transform data into numpy array
-        data = np.array(data).astype(float)
-        framemax = len(data[:,1])
-
-    ax = plt.figure('3D Trajectory')
-    ax = plt.axes(projection='3d')
-
-    # Data for a three-dimensional line
-    zline = data[:,3]
-    xline = data[:,1]
-    yline = data[:,2]
-    ax.plot3D(xline, yline, zline, 'gray')
-#    ax.axis('equal')
-    # Data for three-dimensional scattered points
-    zdata = data[:,3]
-    xdata = data[:,1]
-    ydata = data[:,2]
-    ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens')
-#    ax.axis('equal')
-    ax.set_xlabel('X-Coordinate')
-    ax.set_ylabel('Y_Coordinate')
-    ax.set_zlabel('Z-Coordinate');
-
-
-
-
-#update phase function
-def update(x,y,z):
-
-    for i in range (0,anzTransducer):
-        dist=math.sqrt((transPos[0][i]-x)*(transPos[0][i]-x) + (transPos[1][i]-y)*(transPos[1][i]-y) + (transPos[2][i]-z)*(transPos[2][i]-z))
-        phaseFocal=2*pi*(dist % wavelength)/wavelength
-
-
-#upper half
-        if transPos[2][i] > 0:
-#vertical twin trap
-            phase[convertTransducerPosition[i]]=phaseFocal+mainshift
-
-#stabilising torque (rotation around vertical axis)
-            if transPos[0][i] < 0:
-                phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]
-            else:
-                phase[convertTransducerPosition[i]]=phase[convertTransducerPosition[i]]+secondshift
-
-#lower half
-        else:
-            phase[convertTransducerPosition[i]] = phaseFocal
-
-
-#send phase and duty to FPGA
-
-    for i in range(0,anzTransducer):
-#choose the correction vector and calculate the phase in range [0 .. 719]
-        if i < 36:
-            phaseTot = round(((phase[i] + wiresShiftCorrection1[i]*pi) % (2*pi))/(2*pi)*720) % 720
-        else:
-            phaseTot = round(((phase[i] + wiresShiftCorrection2[i-36]*pi) % (2*pi))/(2*pi)*720) % 720
-
-#calculate the duty cycle in range [0 .. 59]
-        dutyTot = 0
-
-#generate the two bytes
-        phaseByte = bytes(int(phaseTot  % 256).to_bytes(1,'big'))
-        dutyByte = bytes(int((dutyTot * 4 + math.floor((phaseTot/256)))).to_bytes(1,'big'))
-#send the bytes
-        serialObject.write(dutyByte)
-        serialObject.write(phaseByte)
-
-def reset():
-
-    res = 255
-    serialObject.write(bytes(res.to_bytes(1,'big')))
-    serialObject.write(bytes(res.to_bytes(1,'big')))
